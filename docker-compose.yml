@@ -1,0 +1,99 @@
+# ── Felt & Form — docker-compose.yml ─────────────────────────────────────
+# Place this file at the repo root, next to /backend and /frontend.
+#
+# Usage:
+#   1. cp backend/.env.production.example backend/.env  (then fill it in)
+#   2. docker compose build
+#   3. docker compose up -d
+#   4. docker compose exec backend node seed.js   # ONLY on a fresh DB —
+#      see SECURITY_AUDIT.md before running this against real data.
+#
+# MySQL is NOT exposed to the host — only reachable from the `internal`
+# network by the backend container. The frontend container is the only
+# thing bound to a host port, and it's what you put a TLS-terminating
+# reverse proxy (host nginx/Caddy, or Traefik) in front of.
+
+services:
+  mysql:
+    image: mysql:8.0
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: ${DB_NAME}
+      MYSQL_USER: ${DB_USER}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - internal
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${DB_ROOT_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    # Do not add a `ports:` mapping here in production — no reason for the
+    # database to be reachable from outside the Docker network.
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    env_file:
+      - ./backend/.env
+    environment:
+      DB_HOST: mysql
+    volumes:
+      - backend_uploads:/app/uploads
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - internal
+    expose:
+      - "5000"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:5000/api/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      - backend
+    networks:
+      - internal
+    ports:
+      - "127.0.0.1:8080:80"
+      # Bound to localhost only — put a TLS-terminating reverse proxy
+      # (host nginx/Caddy/Traefik) in front of it on 80/443.
+      # If this VPS is single-purpose and you want Docker to own 80/443
+      # directly instead, see the Caddy-based alternative in DEPLOYMENT.md.
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - caddy_data:/data
+      - caddy_config:/config
+    networks:
+      - internal
+    depends_on:
+      - frontend  
+volumes:
+  mysql_data:
+  backend_uploads:
+  caddy_data:
+  caddy_config:
+
+networks:
+  internal:
+    driver: bridge
