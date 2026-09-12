@@ -1,0 +1,10 @@
+node_modules
+npm-debug.log
+.env
+.env.*
+!.env.production.example
+uploads
+*.log
+.git
+.gitignore
+.DS_Store
