@@ -1,0 +1,76 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+  body {
+    @apply bg-paper text-ink font-body antialiased;
+  }
+  h1, h2, h3, h4 {
+    @apply font-display;
+  }
+  :focus-visible {
+    outline: 2px solid #1a1a1a;
+    outline-offset: 2px;
+  }
+}
+
+@layer components {
+  /* Signature element: a stitched seam — a dashed rule with two anchor dots,
+     evoking a sewn hem. Used under section headers and as a hover underline. */
+  .stitch-rule {
+    position: relative;
+    height: 1px;
+    background-image: linear-gradient(to right, currentColor 60%, transparent 0%);
+    background-size: 10px 1px;
+    background-repeat: repeat-x;
+    opacity: 0.45;
+  }
+  .stitch-rule::before,
+  .stitch-rule::after {
+    content: "";
+    position: absolute;
+    top: -2.5px;
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: currentColor;
+  }
+  .stitch-rule::before { left: -2px; }
+  .stitch-rule::after { right: -2px; }
+
+  .stitch-underline {
+    background-image: linear-gradient(to right, currentColor 50%, transparent 0%);
+    background-size: 8px 1.5px;
+    background-repeat: repeat-x;
+    background-position: 0 100%;
+  }
+
+  .eyebrow {
+    @apply text-xs uppercase tracking-widest2 text-charcoal/70 font-medium;
+  }
+
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 bg-ink text-paper px-6 py-3 text-sm uppercase tracking-wide transition-colors duration-300 hover:bg-charcoal disabled:opacity-40 disabled:cursor-not-allowed;
+  }
+
+  .btn-outline {
+    @apply inline-flex items-center justify-center gap-2 border border-ink text-ink px-6 py-3 text-sm uppercase tracking-wide transition-colors duration-300 hover:bg-ink hover:text-paper disabled:opacity-40 disabled:cursor-not-allowed;
+  }
+
+  .input-field {
+    @apply w-full border border-ink/20 bg-paper px-4 py-3 text-sm focus:border-ink focus:outline-none transition-colors;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
