@@ -1,6 +1,6 @@
 # Dora Dounts — Full-Stack E-Commerce(V4)
 
-> Heavyweight basics and considered silhouettes, designed in Cairo.  
+> freshly made donuts, signature flavors, and sweet treats crafted in Cairo.  
 > A production-ready clothing brand e-commerce platform built with **React + Vite**, **Node.js / Express**, and **MySQL**.
 
 ---
