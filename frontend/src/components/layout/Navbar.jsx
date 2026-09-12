@@ -242,7 +242,7 @@ const Navbar = () => {
               <div className="flex items-center justify-between border-b border-ink/10 px-5 py-4">
                 <Link to="/" onClick={() => setMobileOpen(false)}
                   className="font-display text-lg tracking-widest2">
-                  FELT &amp; FORM
+                  Dora Dounts
                 </Link>
                 <button onClick={() => setMobileOpen(false)} aria-label="Close menu"
                   className="flex h-9 w-9 items-center justify-center rounded-full hover:bg-cream transition-colors">

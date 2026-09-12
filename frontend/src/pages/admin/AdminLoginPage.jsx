@@ -31,7 +31,7 @@ const AdminLoginPage = () => {
     <div className="flex min-h-screen items-center justify-center bg-ink px-4">
       <div className="w-full max-w-sm bg-paper p-8 space-y-6">
         <div className="text-center space-y-1">
-          <h1 className="font-display text-3xl">FELT &amp; FORM</h1>
+          <h1 className="font-display text-3xl">Dora Dounts</h1>
           <p className="eyebrow text-charcoal/60">Admin Panel</p>
           <div className="stitch-rule mx-auto w-16 text-ink" />
         </div>

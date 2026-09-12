@@ -366,7 +366,7 @@ const SizeGuidePage = () => {
         {/* Footer note */}
         <p className="mt-10 text-xs text-center text-charcoal/40">
           Measurements are taken from a flat garment. Actual fit may vary slightly due to fabric stretch and construction.
-          Felt &amp; Form is not responsible for sizing decisions made without consulting this guide.
+          Dora Dounts is not responsible for sizing decisions made without consulting this guide.
         </p>
       </div>
     </div>

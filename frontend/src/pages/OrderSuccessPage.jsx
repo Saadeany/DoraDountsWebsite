@@ -16,7 +16,7 @@ const OrderSuccessPage = () => {
     <div className="mx-auto max-w-2xl px-4 py-20 text-center">
       <CheckCircle size={56} className="mx-auto mb-6 text-green-500" strokeWidth={1.5} />
       <h1 className="font-display text-4xl">Order Placed!</h1>
-      <p className="mt-3 text-charcoal/60">Thank you for shopping at Felt &amp; Form.</p>
+      <p className="mt-3 text-charcoal/60">Thank you for shopping at Dora Dounts.</p>
       {order && (
         <div className="mt-8 border border-ink/10 p-6 text-left space-y-3">
           <div className="flex justify-between text-sm">
