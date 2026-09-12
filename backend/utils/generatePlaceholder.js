@@ -23,7 +23,7 @@ const generatePlaceholderSVG = (label, seed = 0) => {
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 1000" width="800" height="1000">
   <rect width="800" height="1000" fill="${bg}"/>
   <rect x="40" y="40" width="720" height="920" fill="none" stroke="${textColor}" stroke-opacity="0.25" stroke-width="1.5"/>
-  <text x="400" y="470" font-family="Georgia, serif" font-size="34" fill="${textColor}" text-anchor="middle" letter-spacing="6">FELT &amp; FORM</text>
+  <text x="400" y="470" font-family="Georgia, serif" font-size="34" fill="${textColor}" text-anchor="middle" letter-spacing="6">Dora Dounts</text>
   <text x="400" y="520" font-family="Helvetica, Arial, sans-serif" font-size="20" fill="${textColor}" fill-opacity="0.85" text-anchor="middle" letter-spacing="2">${label.toUpperCase()}</text>
 </svg>`;
 };
