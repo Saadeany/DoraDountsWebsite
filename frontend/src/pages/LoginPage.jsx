@@ -83,12 +83,6 @@ const LoginPage = () => {
             {loading ? "Please wait…" : mode === "login" ? "Sign In" : "Create Account"}
           </button>
         </form>
-
-        {mode === "login" && (
-          <p className="mt-6 text-center text-xs text-charcoal/60">
-            Demo: customer@feltandform.com / Customer@123
-          </p>
-        )}
       </div>
     </div>
   );
