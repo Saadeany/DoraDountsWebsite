@@ -157,25 +157,30 @@ const seed = async () => {
       await Zone.create(z);
     }
 
-    console.log("⏳ Seeding admin and demo customer accounts...");
-    const adminPassword = await bcrypt.hash(process.env.SEED_ADMIN_PASSWORD || "Admin@12345", 12);
+    console.log("⏳ Seeding admin account...");
+    const adminPassword = await bcrypt.hash(ADMIN_PASSWORD_PLAIN, 12);
     const admin = await User.create({
       first_name: "Store",
       last_name: "Admin",
-      email: (process.env.SEED_ADMIN_EMAIL || "admin@feltandform.com").toLowerCase(),
+      email: ADMIN_EMAIL,
       password: adminPassword,
       role: "admin",
     });
 
-    const demoPassword = await bcrypt.hash("Customer@123", 12);
-    const demoCustomer = await User.create({
-      first_name: "Demo",
-      last_name: "Customer",
-      email: "customer@feltandform.com",
-      password: demoPassword,
-      role: "customer",
-      phone: "+201000000000",
-    });
+    // Demo customer only exists in local/dev seeding — never created in production,
+    // so there's no publicly-known credential pair that can reach production data.
+    let demoCustomer = null;
+    if (!isProd) {
+      const demoPassword = await bcrypt.hash("Customer@123", 12);
+      demoCustomer = await User.create({
+        first_name: "Demo",
+        last_name: "Customer",
+        email: "customer@feltandform.com",
+        password: demoPassword,
+        role: "customer",
+        phone: "+201000000000",
+      });
+    }
 
     console.log("⏳ Seeding products (this includes generating placeholder images)...");
     let imgSeed = 0;
