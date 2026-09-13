@@ -40,6 +40,17 @@ const B = {
   whatsappNumber: process.env.WHATSAPP_NUMBER || "+20 100 000 0000",
 };
 
+// Minimal HTML-escaping for user-supplied strings interpolated into emails.
+// Contact-form and newsletter input is the only truly untrusted text these
+// templates render — product/order data is admin-controlled already.
+const escapeHtml = (str = "") =>
+  String(str)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+
 // ── Base layout ────────────────────────────────────────────────────────────
 const baseLayout = (title, bodyHtml) => `
 <!DOCTYPE html>
@@ -359,14 +370,14 @@ const templates = {
   }),
 
   adminNewUser: (user) => ({
-    subject: `[${B.name}] New customer — ${user.first_name} ${user.last_name}`,
+    subject: `[${B.name}] New customer — ${escapeHtml(user.first_name)} ${escapeHtml(user.last_name)}`,
     html: baseLayout("New Customer", `
       <p class="eyebrow">Admin alert</p>
       <h1>New customer registered.</h1>
       <table class="info-table">
-        <tr><td>Name</td><td>${user.first_name} ${user.last_name}</td></tr>
-        <tr><td>Email</td><td>${user.email}</td></tr>
-        <tr><td>Phone</td><td>${user.phone || "—"}</td></tr>
+        <tr><td>Name</td><td>${escapeHtml(user.first_name)} ${escapeHtml(user.last_name)}</td></tr>
+        <tr><td>Email</td><td>${escapeHtml(user.email)}</td></tr>
+        <tr><td>Phone</td><td>${escapeHtml(user.phone || "—")}</td></tr>
         <tr><td>Registered</td><td>${new Date().toLocaleDateString("en-EG", { day:"numeric",month:"long",year:"numeric" })}</td></tr>
       </table>
       <a href="${B.website}/admin/customers" class="btn btn-outline">View Customers</a>
@@ -374,16 +385,37 @@ const templates = {
   }),
 
   adminContact: (form) => ({
-    subject: `[${B.name}] Contact — ${form.subject}`,
+    subject: `[${B.name}] Contact — ${escapeHtml(form.subject)}`,
     html: baseLayout("Contact Message", `
       <p class="eyebrow">Customer message</p>
       <h1>New contact form submission.</h1>
       <table class="info-table">
-        <tr><td>From</td><td>${form.name} &lt;${form.email}&gt;</td></tr>
-        <tr><td>Subject</td><td>${form.subject}</td></tr>
+        <tr><td>From</td><td>${escapeHtml(form.name)} &lt;${escapeHtml(form.email)}&gt;</td></tr>
+        <tr><td>Subject</td><td>${escapeHtml(form.subject)}</td></tr>
       </table>
-      <div class="alert-box" style="white-space:pre-line;">${form.message}</div>
-      <a href="mailto:${form.email}?subject=Re: ${encodeURIComponent(form.subject)}" class="btn">Reply to Customer</a>
+      <div class="alert-box" style="white-space:pre-line;">${escapeHtml(form.message)}</div>
+      <a href="mailto:${encodeURIComponent(form.email)}?subject=Re: ${encodeURIComponent(form.subject)}" class="btn">Reply to Customer</a>
+    `),
+  }),
+
+    newsletterConfirmation: (email) => ({
+    subject: `You're on the list — ${B.name}`,
+    html: baseLayout("Subscribed", `
+      <p class="eyebrow">Newsletter</p>
+      <h1>You're subscribed.</h1>
+      <p>Thanks for signing up to hear from ${B.name}. We'll only email you about new drops, restocks, and offers.</p>
+      <a href="${B.website}/shop" class="btn">Browse the Shop</a>
+      <hr class="divider" />
+      <p style="font-size:12px;color:${B.stone};">Didn't sign up for this? You can safely ignore this email.</p>
+    `),
+  }),
+
+  adminNewSubscriber: (email) => ({
+    subject: `[${B.name}] New newsletter subscriber`,
+    html: baseLayout("New Subscriber", `
+      <p class="eyebrow">Admin alert</p>
+      <h1>New newsletter signup.</h1>
+      <table class="info-table"><tr><td>Email</td><td>${escapeHtml(email)}</td></tr></table>
     `),
   }),
 };
@@ -473,6 +505,17 @@ const sendAdminContactEmail = (form) => {
   const t = templates.adminContact(form);
   return sendEmail({ to: adminEmail, ...t, emailType: "admin_contact" });
 };
+const sendNewsletterConfirmationEmail = (email) => {
+  const t = templates.newsletterConfirmation(email);
+  return sendEmail({ to: email, ...t, emailType: "welcome" });
+};
+
+const sendAdminNewSubscriberEmail = (email) => {
+  const adminEmail = process.env.ADMIN_NOTIFY_EMAIL;
+  if (!adminEmail) return Promise.resolve(false);
+  const t = templates.adminNewSubscriber(email);
+  return sendEmail({ to: adminEmail, ...t, emailType: "admin_contact" });
+};
 
 module.exports = {
   sendEmail,
@@ -485,6 +528,8 @@ module.exports = {
   sendAdminLowStockEmail,
   sendAdminNewUserEmail,
   sendAdminContactEmail,
+  sendNewsletterConfirmationEmail,
+  sendAdminNewSubscriberEmail,
 };
 
 // ── 10. Customer: Return/Cancel request received ──────────────────────────
