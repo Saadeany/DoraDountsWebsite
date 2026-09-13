@@ -1,11 +1,9 @@
 const multer = require("multer");
 
-// Catch-all 404 for unmatched routes
 const notFound = (req, res, next) => {
   res.status(404).json({ message: `Route not found: ${req.originalUrl}` });
 };
 
-// Centralized error handler. Keeps stack traces out of API responses in production.
 const errorHandler = (err, req, res, next) => {
   console.error(err);
 
@@ -19,9 +17,23 @@ const errorHandler = (err, req, res, next) => {
   }
 
   const statusCode = err.statusCode || 500;
+  const isProd = process.env.NODE_ENV === "production";
+
+  // Only ever trust err.message for errors WE deliberately threw with a 4xx
+  // statusCode (e.g. OUT_OF_STOCK, COUPON_LIMIT_REACHED above). Anything
+  // that reaches here as a 500 is an unexpected exception — in production
+  // it could be a DB error, a filesystem path, or other internal detail,
+  // so it gets a generic message. Full detail still goes to console.error above.
+  const safeMessage =
+    statusCode < 500
+      ? err.message || "Request could not be processed."
+      : isProd
+      ? "Something went wrong on our end. Please try again shortly."
+      : err.message || "Internal server error.";
+
   res.status(statusCode).json({
-    message: err.message || "Something went wrong on the server.",
-    ...(process.env.NODE_ENV === "development" && { stack: err.stack }),
+    message: safeMessage,
+    ...(!isProd && { stack: err.stack }),
   });
 };
 
