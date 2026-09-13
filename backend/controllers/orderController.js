@@ -11,6 +11,19 @@ const LOW_STOCK_THRESHOLD     = parseInt(process.env.LOW_STOCK_THRESHOLD || "5",
 // before the order can be processed (see emailService's transfer instructions).
 const TRANSFER_METHODS = ["vodafone_cash", "instapay"];
 
+// ── Allowed payment_status transitions ──────────────────────────────────────
+// Prevents an admin (or a replayed/tampered request) from jumping straight
+// from e.g. "pending" to "refunded" without ever having been "paid", or from
+// resurrecting a "refunded" order. Only the transitions listed here are legal;
+// setting the same status again is always a no-op and allowed implicitly.
+const PAYMENT_STATUS_TRANSITIONS = {
+  pending: ["paid", "failed", "awaiting_transfer"],
+  awaiting_transfer: ["paid", "failed"],
+  paid: ["refunded"],
+  failed: ["pending", "awaiting_transfer"],
+  refunded: [],
+};
+
 const getAdminUser = () => User.findOne({ where: { role: "admin" } });
 
 // Saves/updates the shipping address the customer just used onto their
@@ -98,6 +111,11 @@ const checkout = async (req, res, next) => {
     if (cartItems.length === 0) { await t.rollback(); return res.status(400).json({ message: "Your cart is empty." }); }
 
     // Validate stock and subtotal
+    // NOTE: this is a best-effort pre-check using values read at the start
+    // of the transaction. It cannot fully prevent a race by itself — the
+    // authoritative check is the atomic conditional UPDATE further down,
+    // which is what actually prevents overselling. This pass exists purely
+    // to give a fast, friendly error message in the common (non-racing) case.
     let subtotal = 0;
     for (const item of cartItems) {
       if (!item.Product || !item.Product.is_active) {
@@ -175,23 +193,68 @@ const checkout = async (req, res, next) => {
       }, { transaction: t });
       orderItemsData.push(oi);
 
-      item.Product.stock -= item.quantity;
-      await item.Product.save({ transaction: t });
-
-      if (item.size) {
-        await sequelize.query(
-          `UPDATE product_sizes ps
-           JOIN sizes s ON s.id = ps.size_id
-           SET ps.stock = GREATEST(0, ps.stock - :qty)
-           WHERE ps.product_id = :pid AND s.name = :size`,
-          { replacements: { qty: item.quantity, pid: item.Product.id, size: item.size }, transaction: t }
-        );
+      // ── Atomic stock decrement ──────────────────────────────────────────
+      // A conditional UPDATE is race-safe on its own: MySQL takes a row lock
+      // for the duration of this statement and re-evaluates the WHERE clause
+      // against the current committed/locked value, so two concurrent
+      // checkouts racing for the last unit cannot both succeed. If the
+      // affected row count comes back 0, someone else took the remaining
+      // stock between our pre-check above and now — abort and roll back the
+      // whole order rather than let stock go negative.
+      const [stockResult] = await sequelize.query(
+        `UPDATE products SET stock = stock - :qty WHERE id = :pid AND stock >= :qty`,
+        { replacements: { qty: item.quantity, pid: item.Product.id }, transaction: t }
+      );
+      if (!stockResult || stockResult.affectedRows === 0) {
+        const err = new Error(`"${item.Product.name}" just sold out. Please remove it from your cart and try again.`);
+        err.statusCode = 409;
+        err.code = "OUT_OF_STOCK";
+        throw err;
       }
 
-      if (item.Product.stock <= LOW_STOCK_THRESHOLD) lowStockProducts.push(item.Product);
+      if (item.size) {
+        const [sizeResult] = await sequelize.query(
+          `UPDATE product_sizes ps
+           JOIN sizes s ON s.id = ps.size_id
+           SET ps.stock = ps.stock - :qty
+           WHERE ps.product_id = :pid AND s.name = :size AND ps.stock >= :qty`,
+          { replacements: { qty: item.quantity, pid: item.Product.id, size: item.size }, transaction: t }
+        );
+        if (!sizeResult || sizeResult.affectedRows === 0) {
+          const err = new Error(`Size ${item.size} of "${item.Product.name}" just sold out. Please choose a different size.`);
+          err.statusCode = 409;
+          err.code = "OUT_OF_STOCK";
+          throw err;
+        }
+      }
+
+      // Approximate remaining stock for the low-stock admin alert only —
+      // this is NOT authoritative (another concurrent order could also be
+      // decrementing right now). The atomic UPDATE above is the source of
+      // truth for the actual database value; this is just used to decide
+      // whether to fire a "running low" notification.
+      const approxRemaining = item.Product.stock - item.quantity;
+      if (approxRemaining <= LOW_STOCK_THRESHOLD) lowStockProducts.push(item.Product);
     }
 
-    if (appliedCoupon) { appliedCoupon.times_used += 1; await appliedCoupon.save({ transaction: t }); }
+    if (appliedCoupon) {
+      // ── Atomic coupon usage increment ────────────────────────────────
+      // Same pattern as stock: increment only if still under the usage
+      // limit, in one conditional UPDATE, so two customers racing to use
+      // the last remaining redemption of a limited coupon can't both
+      // succeed and push times_used past usage_limit.
+      const [couponResult] = await sequelize.query(
+        `UPDATE coupons SET times_used = times_used + 1 WHERE id = :id AND times_used < usage_limit`,
+        { replacements: { id: appliedCoupon.id }, transaction: t }
+      );
+      if (!couponResult || couponResult.affectedRows === 0) {
+        const err = new Error("This coupon just reached its usage limit. Please remove it and try again.");
+        err.statusCode = 400;
+        err.code = "COUPON_LIMIT_REACHED";
+        throw err;
+      }
+    }
+
     await Cart.destroy({ where: { user_id: req.user.id, saved_for_later: false }, transaction: t });
     await t.commit();
 
@@ -227,7 +290,10 @@ const checkout = async (req, res, next) => {
     }).catch(() => {});
 
     res.status(201).json({ message: "Order placed successfully.", order: fullOrder });
-  } catch (error) { await t.rollback(); next(error); }
+  } catch (error) {
+    await t.rollback();
+    next(error);
+  }
 };
 
 // @route GET /api/orders/my-orders
@@ -325,7 +391,9 @@ const updateOrderStatus = async (req, res, next) => {
 // @route PUT /api/admin/orders/:id/payment-status
 // Lets an admin confirm a Vodafone Cash / InstaPay transfer (moving
 // "awaiting_transfer" -> "paid") after checking the WhatsApp screenshot,
-// or mark a transfer as failed/refunded.
+// or mark a transfer as failed/refunded. Transitions are restricted to the
+// map defined in PAYMENT_STATUS_TRANSITIONS above — e.g. you can't jump
+// straight from "pending" to "refunded", and "refunded" is a dead end.
 const updateOrderPaymentStatus = async (req, res, next) => {
   try {
     const { payment_status } = req.body;
@@ -336,6 +404,15 @@ const updateOrderPaymentStatus = async (req, res, next) => {
 
     const order = await Order.findByPk(req.params.id);
     if (!order) return res.status(404).json({ message: "Order not found." });
+
+    if (order.payment_status !== payment_status) {
+      const allowed = PAYMENT_STATUS_TRANSITIONS[order.payment_status] || [];
+      if (!allowed.includes(payment_status)) {
+        return res.status(400).json({
+          message: `Cannot change payment status from "${order.payment_status}" to "${payment_status}".`,
+        });
+      }
+    }
 
     order.payment_status = payment_status;
     await order.save();

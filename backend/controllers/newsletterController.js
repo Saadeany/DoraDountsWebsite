@@ -1,15 +1,27 @@
-const { Newsletter } = require("../models");
+const { Newsletter, User } = require("../models");
+const { sendNewsletterConfirmationEmail, sendAdminNewSubscriberEmail } = require("../utils/emailService");
 
-// @route POST /api/newsletter/subscribe
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 const subscribe = async (req, res, next) => {
   try {
     const { email } = req.body;
-    if (!email) return res.status(400).json({ message: "Email is required." });
+    if (typeof email !== "string") return res.status(400).json({ message: "Email is required." });
 
-    const existing = await Newsletter.findOne({ where: { email: email.toLowerCase().trim() } });
+    const normalized = email.trim().toLowerCase();
+    if (!EMAIL_RE.test(normalized) || normalized.length > 150) {
+      return res.status(400).json({ message: "Please enter a valid email address." });
+    }
+
+    const existing = await Newsletter.findOne({ where: { email: normalized } });
     if (existing) return res.status(200).json({ message: "You're already subscribed." });
 
-    await Newsletter.create({ email: email.toLowerCase().trim() });
+    await Newsletter.create({ email: normalized });
+
+    sendNewsletterConfirmationEmail(normalized).catch(() => {});
+    const admin = await User.findOne({ where: { role: "admin" } });
+    if (admin) sendAdminNewSubscriberEmail(normalized).catch(() => {});
+
     res.status(201).json({ message: "Subscribed successfully. Welcome to the list!" });
   } catch (error) {
     next(error);
