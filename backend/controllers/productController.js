@@ -11,6 +11,7 @@ const {
   Review,
   sequelize,
 } = require("../models");
+const { getLiveRushHourDiscountMap, applyRushHourOverride } = require("../utils/rushHour");
 
 const PRODUCT_INCLUDES = [
   { model: Category, attributes: ["id", "name", "slug"] },
@@ -19,8 +20,10 @@ const PRODUCT_INCLUDES = [
   { model: Color, as: "colors", attributes: ["id", "name", "hex_code"], through: { attributes: [] } },
 ];
 
-// Computes average rating + review count for one or more product ids
-const attachRatings = async (products) => {
+// Computes average rating + review count for one or more product ids, and
+// applies the live Rush Hour discount (if any) to products that don't
+// already have their own discount set.
+const attachRatings = async (products, rushHourMap = {}) => {
   const ids = products.map((p) => p.id);
   if (ids.length === 0) return products;
 
@@ -45,11 +48,14 @@ const attachRatings = async (products) => {
 
   return products.map((p) => {
     const json = p.toJSON ? p.toJSON() : p;
+    const { discount, is_rush_hour } = applyRushHourOverride(json, rushHourMap);
     return {
       ...json,
+      discount,
+      is_rush_hour,
       rating: map[p.id]?.avg_rating ? parseFloat(map[p.id].avg_rating) : 0,
       review_count: map[p.id]?.review_count || 0,
-      final_price: parseFloat((json.price * (1 - (json.discount || 0) / 100)).toFixed(2)),
+      final_price: parseFloat((json.price * (1 - discount / 100)).toFixed(2)),
     };
   });
 };
@@ -125,7 +131,8 @@ const getProducts = async (req, res, next) => {
       offset: (pageNum - 1) * limitNum,
     });
 
-    let withRatings = await attachRatings(rows);
+    const rushHourMap = await getLiveRushHourDiscountMap();
+    let withRatings = await attachRatings(rows, rushHourMap);
 
     // "most_popular" and "best_rated" need rating data, so sort in JS after fetch
     if (sort === "best_rated") {
@@ -180,7 +187,8 @@ const getProductBySlug = async (req, res, next) => {
     });
     if (!product) return res.status(404).json({ message: "Product not found." });
 
-    const [withRating] = await attachRatings([product]);
+    const rushHourMap = await getLiveRushHourDiscountMap();
+    const [withRating] = await attachRatings([product], rushHourMap);
 
     const reviews = await Review.findAll({
       where: { product_id: product.id },
@@ -194,7 +202,7 @@ const getProductBySlug = async (req, res, next) => {
       include: PRODUCT_INCLUDES,
       limit: 4,
     });
-    const similarWithRatings = await attachRatings(similar);
+    const similarWithRatings = await attachRatings(similar, rushHourMap);
 
     res.json({ product: withRating, reviews, similar_products: similarWithRatings });
   } catch (error) {
@@ -397,6 +405,8 @@ const deleteProductImage = async (req, res, next) => {
 };
 
 // @route GET /api/admin/products  (admin only — includes inactive products, no pagination cap)
+// Note: intentionally does NOT apply the Rush Hour override — admins need
+// to see and edit the product's real, stored discount here.
 const getAllProductsAdmin = async (req, res, next) => {
   try {
     const { search, page = 1, limit = 20 } = req.query;

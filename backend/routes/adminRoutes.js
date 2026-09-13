@@ -26,6 +26,12 @@ const {
   updateZone,
   deleteZone,
 } = require("../controllers/zoneController");
+const {
+  getAdminRushHours,
+  createRushHour,
+  updateRushHour,
+  deleteRushHour,
+} = require("../controllers/rushHourController");
 
 // Every route below requires a valid admin JWT
 router.use(protect, adminOnly);
@@ -67,6 +73,12 @@ router.get("/zones", getAdminZones);
 router.post("/zones", createZone);
 router.put("/zones/:id", updateZone);
 router.delete("/zones/:id", deleteZone);
+
+// ---- Rush Hour (timed flash discounts) ----
+router.get("/rush-hours", getAdminRushHours);
+router.post("/rush-hours", createRushHour);
+router.put("/rush-hours/:id", updateRushHour);
+router.delete("/rush-hours/:id", deleteRushHour);
 
 module.exports = router;
 

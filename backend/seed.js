@@ -18,6 +18,11 @@ const {
   Coupon,
   Zone,
 } = require("./models");
+
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL;
+const ADMIN_PASSWORD_PLAIN = process.env.ADMIN_PASSWORD_PLAIN;
+const isProd = process.env.NODE_ENV === "production";
+
 const { savePlaceholderImage } = require("./utils/generatePlaceholder");
 const generateOrderNumber = require("./utils/generateOrderNumber");
 

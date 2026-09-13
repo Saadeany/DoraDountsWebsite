@@ -1,4 +1,5 @@
 const { Cart, Product, ProductImage } = require("../models");
+const { getLiveRushHourDiscountMap, applyRushHourOverride } = require("../utils/rushHour");
 
 const CART_INCLUDE = [
   {
@@ -17,10 +18,15 @@ const getCart = async (req, res, next) => {
       order: [["createdAt", "DESC"]],
     });
 
+    const rushHourMap = await getLiveRushHourDiscountMap();
+
     let subtotal = 0;
     const enriched = items.map((item) => {
       const json = item.toJSON();
-      const finalPrice = json.Product.price * (1 - (json.Product.discount || 0) / 100);
+      const { discount, is_rush_hour } = applyRushHourOverride(json.Product, rushHourMap);
+      json.Product.discount = discount;
+      json.Product.is_rush_hour = is_rush_hour;
+      const finalPrice = json.Product.price * (1 - discount / 100);
       const lineTotal = finalPrice * json.quantity;
       subtotal += lineTotal;
       return { ...json, final_price: parseFloat(finalPrice.toFixed(2)), line_total: parseFloat(lineTotal.toFixed(2)) };

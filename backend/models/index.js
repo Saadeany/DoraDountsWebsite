@@ -20,6 +20,8 @@ const PasswordResetToken = require("./PasswordResetToken");
 const Notification = require("./Notification");
 const EmailLog = require("./EmailLog");
 const Zone = require("./Zone");
+const RushHour = require("./RushHour");
+const RushHourProduct = require("./RushHourProduct");
 
 // Category <-> Product
 Category.hasMany(Product, { foreignKey: "category_id", onDelete: "SET NULL" });
@@ -40,6 +42,10 @@ Product.hasMany(ProductSize, { foreignKey: "product_id" });
 // Product <-> Color (M2M)
 Product.belongsToMany(Color, { through: ProductColor, foreignKey: "product_id", otherKey: "color_id", as: "colors" });
 Color.belongsToMany(Product, { through: ProductColor, foreignKey: "color_id", otherKey: "product_id" });
+
+// Product <-> RushHour (M2M)
+RushHour.belongsToMany(Product, { through: RushHourProduct, as: "products", foreignKey: "rush_hour_id", otherKey: "product_id" });
+Product.belongsToMany(RushHour, { through: RushHourProduct, as: "rushHours", foreignKey: "product_id", otherKey: "rush_hour_id" });
 
 // User <-> Order
 User.hasMany(Order, { foreignKey: "user_id", onDelete: "CASCADE" });
@@ -98,7 +104,7 @@ module.exports = {
   Size, Color, ProductSize, ProductColor,
   Order, OrderItem, Wishlist, Cart, Coupon, Review, Newsletter,
   EmailVerificationToken, PasswordResetToken, Notification, EmailLog,
-  Zone,
+  Zone, RushHour, RushHourProduct,
 };
 
 // Loaded at bottom to avoid circular reference issues

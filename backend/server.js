@@ -24,6 +24,7 @@ const notificationRoutes = require("./routes/notificationRoutes");
 const emailLogRoutes     = require("./routes/emailLogRoutes");
 const contactRoutes      = require("./routes/contactRoutes");
 const zoneRoutes         = require("./routes/zoneRoutes");
+const rushHourRoutes     = require("./routes/rushHourRoutes");
 
 const app = express();
 app.set("trust proxy", 1);
@@ -67,6 +68,7 @@ app.use("/api/notifications", notificationRoutes);
 app.use("/api/admin/email-logs", emailLogRoutes);
 app.use("/api/contact",       contactRoutes);
 app.use("/api/zones",         zoneRoutes);
+app.use("/api/rush-hour",     rushHourRoutes);
 const returnRoutes       = require("./routes/returnRoutes");
 app.use("/api/returns",         returnRoutes);
 
