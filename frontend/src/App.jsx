@@ -43,6 +43,7 @@ import AdminCustomersPage  from "./pages/admin/AdminCustomersPage";
 import AdminCouponsPage    from "./pages/admin/AdminCouponsPage";
 import AdminEmailLogsPage  from "./pages/admin/AdminEmailLogsPage";
 import AdminZonesPage      from "./pages/admin/AdminZonesPage";
+import AdminRushHourPage   from "./pages/admin/AdminRushHourPage";
 
 const App = () => (
   <Routes>
@@ -52,6 +53,7 @@ const App = () => (
       <Route index              element={<AdminDashboard />}      />
       <Route path="products"    element={<AdminProductsPage />}   />
       <Route path="categories"  element={<AdminCategoriesPage />} />
+      <Route path="rush-hour"   element={<AdminRushHourPage />}   />
       <Route path="orders"      element={<AdminOrdersPage />}     />
       <Route path="returns"     element={<AdminReturnsPage />}    />
       <Route path="zones"       element={<AdminZonesPage />}      />

@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Heart, Eye, ShoppingBag, Check } from "lucide-react";
+import { Heart, Eye, ShoppingBag, Check, Zap } from "lucide-react";
 import { formatPrice, getFinalPrice, getPrimaryImage } from "../../utils/format";
 import { useWishlist } from "../../context/WishlistContext";
 import { useAuth } from "../../context/AuthContext";
@@ -61,8 +61,9 @@ const ProductCard = ({ product, onQuickView }) => {
           <img src={getPrimaryImage(product)} alt={product.name}
             className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105" loading="lazy" />
           {hasDiscount && (
-            <span className="absolute left-3 top-3 bg-ink text-paper text-[11px] uppercase tracking-wide px-2.5 py-1">
-              -{Math.round(product.discount)}%
+            <span className={`absolute left-3 top-3 flex items-center gap-1 text-paper text-[11px] uppercase tracking-wide px-2.5 py-1 ${product.is_rush_hour ? "bg-amber-600" : "bg-ink"}`}>
+              {product.is_rush_hour && <Zap size={10} className="fill-paper" />}
+              {product.is_rush_hour ? "Rush Hour" : `-${Math.round(product.discount)}%`}
             </span>
           )}
           {product.stock === 0 && (
@@ -91,6 +92,7 @@ const ProductCard = ({ product, onQuickView }) => {
           <div className="flex items-center gap-2">
             <span className="text-sm font-medium">{formatPrice(finalPrice)}</span>
             {hasDiscount && <span className="text-xs text-charcoal/50 line-through">{formatPrice(product.price)}</span>}
+            {product.is_rush_hour && <span className="text-[10px] text-amber-700">-{Math.round(product.discount)}%</span>}
           </div>
           {product.colors?.length > 0 && (
             <div className="flex items-center gap-1 pt-1">

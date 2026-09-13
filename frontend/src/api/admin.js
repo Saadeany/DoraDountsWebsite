@@ -42,3 +42,9 @@ export const getAdminZones = () => api.get("/admin/zones");
 export const createZone = (data) => api.post("/admin/zones", data);
 export const updateZone = (id, data) => api.put(`/admin/zones/${id}`, data);
 export const deleteZone = (id) => api.delete(`/admin/zones/${id}`);
+
+// ---- Rush Hour (timed flash discounts) ----
+export const getAdminRushHours = () => api.get("/admin/rush-hours");
+export const createRushHour = (data) => api.post("/admin/rush-hours", data);
+export const updateRushHour = (id, data) => api.put(`/admin/rush-hours/${id}`, data);
+export const deleteRushHour = (id) => api.delete(`/admin/rush-hours/${id}`);

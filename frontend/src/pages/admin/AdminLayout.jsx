@@ -3,7 +3,7 @@ import { Outlet, Link, useLocation, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard, Package, FolderOpen, ShoppingCart,
   Users, Tag, Mail, RotateCcw, Menu, LogOut, ExternalLink, MapPinned,
-  Volume2, VolumeX
+  Volume2, VolumeX, Zap
 } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import { useNotifications } from "../../context/NotificationContext";
@@ -13,6 +13,7 @@ const NAV = [
   { label: "Dashboard",  to: "/admin",            icon: LayoutDashboard },
   { label: "Products",   to: "/admin/products",   icon: Package         },
   { label: "Categories", to: "/admin/categories", icon: FolderOpen      },
+  { label: "Rush Hour",  to: "/admin/rush-hour",  icon: Zap             },
   { label: "Orders",     to: "/admin/orders",     icon: ShoppingCart    },
   { label: "Returns",    to: "/admin/returns",    icon: RotateCcw,      notifyType: "admin_new_return" },
   { label: "Zones",      to: "/admin/zones",      icon: MapPinned       },
@@ -34,7 +35,7 @@ const AdminLayout = () => {
     <aside className="flex flex-col w-56 bg-ink text-paper h-full">
       {/* Brand */}
       <div className="p-5 pb-4 border-b border-paper/10">
-        <p className="font-display text-lg tracking-widest2 text-paper">Dora Dounts</p>
+        <p className="font-display text-lg tracking-widest2 text-paper">FELT &amp; FORM</p>
         <p className="text-[11px] text-paper/45 mt-0.5 uppercase tracking-widest">Admin Panel</p>
       </div>
 
