@@ -15,41 +15,28 @@ const createTransporter = () =>
     tls: { rejectUnauthorized: false }, // allow self-signed in dev
   });
 
-const FROM = `"${process.env.EMAIL_FROM_NAME || "Dora Donuts"}" <${
-  process.env.EMAIL_FROM_ADDRESS || "doradounts@gmail.com"
+const FROM = `"${process.env.EMAIL_FROM_NAME || "Felt & Form"}" <${
+  process.env.EMAIL_FROM_ADDRESS || "hello@feltandform.com"
 }>`;
 
 // ── Brand tokens ───────────────────────────────────────────────────────────
 const B = {
-        // ── DORA Donuts & Pastry palette ──────────────────────────
-  ink: "#FF0090",       // primary text / buttons / accents — pink
-  charcoal: "#000000",  // secondary text / footer text — black       stone: "#45cbdd",     // darker cyan accent
-  beige: "#45cbdd",     // darker cyan accent
-  cream: "#45cbdd",     // darker cyan accent
-  paper: "#FFFFFF",     // page background — white
+  ink: "#1A1A1A",
+  charcoal: "#2B2B2B",
+  stone: "#A89F8E",
+  beige: "#D8C9AE",
+  cream: "#F4F1EA",
+  paper: "#FAF8F4",
   white: "#FFFFFF",
   green: "#16a34a",
   red: "#dc2626",
-  name: process.env.EMAIL_FROM_NAME || "Dora Donuts",
-  fromAddress: process.env.EMAIL_FROM_ADDRESS || "doradounts@gmail.com",
+  name: process.env.EMAIL_FROM_NAME || "Felt & Form",
+  fromAddress: process.env.EMAIL_FROM_ADDRESS || "hello@feltandform.com",
   website: process.env.CLIENT_URL || "http://localhost:5173",
-  // Manual-transfer payment details — shown on the order confirmation email
-  // whenever the customer pays via Vodafone Cash or InstaPay.
   vodafoneCashNumber: process.env.VODAFONE_CASH_NUMBER || "+20 100 000 0000",
   instapayNumber: process.env.INSTAPAY_NUMBER || "+20 100 000 0000 / instapay.me/feltandform",
   whatsappNumber: process.env.WHATSAPP_NUMBER || "+20 100 000 0000",
 };
-
-// Minimal HTML-escaping for user-supplied strings interpolated into emails.
-// Contact-form and newsletter input is the only truly untrusted text these
-// templates render — product/order data is admin-controlled already.
-const escapeHtml = (str = "") =>
-  String(str)
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#39;");
 
 // ── Base layout ────────────────────────────────────────────────────────────
 const baseLayout = (title, bodyHtml) => `
@@ -92,6 +79,8 @@ const baseLayout = (title, bodyHtml) => `
     .alert-box { border-left: 3px solid ${B.ink}; padding: 14px 18px; background: ${B.cream}; margin: 20px 0; font-size: 13px; }
     .transfer-box { border-left: 3px solid #d97706; padding: 16px 20px; background: #fffbeb; margin: 20px 0; font-size: 13px; line-height: 1.7; }
     .transfer-number { font-size: 18px; font-weight: 700; letter-spacing: 0.02em; color: ${B.ink}; }
+    .coupon-box { background: ${B.cream}; padding: 24px; margin: 20px 0; text-align: center; }
+    .coupon-code { font-size: 28px; font-weight: 700; letter-spacing: 0.06em; margin: 6px 0; }
     .footer { background: ${B.charcoal}; padding: 28px 40px; text-align: center; }
     .footer p { color: rgba(250,248,244,0.45); font-size: 11px; margin-bottom: 4px; }
     .footer a { color: rgba(250,248,244,0.6); text-decoration: none; }
@@ -110,7 +99,7 @@ const baseLayout = (title, bodyHtml) => `
   </div>
   <div class="body">${bodyHtml}</div>
   <div class="footer">
-    <p>${B.name} · 48 El Fardous Compound Al Ahly Club, Nasr City, Cairo, Egypt</p>
+    <p>${B.name} · 12 El-Nozha St, Heliopolis, Cairo, Egypt</p>
     <p><a href="${B.website}">${B.website}</a> &nbsp;|&nbsp; <a href="mailto:${B.fromAddress}">${B.fromAddress}</a></p>
     <p style="margin-top:10px;">You're receiving this because you have an account at ${B.name}.</p>
   </div>
@@ -135,7 +124,6 @@ const statusBadge = (status) => {
 const paymentLabel = (method) =>
   ({ cash_on_delivery: "Cash on Delivery", vodafone_cash: "Vodafone Cash", instapay: "InstaPay" }[method] || method);
 
-// Payment methods that require a manual transfer before processing.
 const TRANSFER_METHODS = ["vodafone_cash", "instapay"];
 
 // ── Product rows for order emails ─────────────────────────────────────────
@@ -165,9 +153,6 @@ const orderSummaryBlock = (order) => `
   <div class="summary-row summary-total"><span>Total</span><span>${parseFloat(order.total_amount).toLocaleString()} EGP</span></div>
 </div>`;
 
-// Manual-transfer instructions — shown whenever the order was paid via
-// Vodafone Cash or InstaPay. The order stays "awaiting_transfer" until an
-// admin sees the WhatsApp screenshot and confirms it in the admin panel.
 const transferInstructionsBlock = (order) => {
   if (!TRANSFER_METHODS.includes(order.payment_method)) return "";
   const number = order.payment_method === "vodafone_cash" ? B.vodafoneCashNumber : B.instapayNumber;
@@ -186,7 +171,6 @@ const transferInstructionsBlock = (order) => {
   </div>`;
 };
 
-// ── Estimated delivery string ──────────────────────────────────────────────
 const estimatedDelivery = () => {
   const d = new Date();
   d.setDate(d.getDate() + 4);
@@ -370,14 +354,14 @@ const templates = {
   }),
 
   adminNewUser: (user) => ({
-    subject: `[${B.name}] New customer — ${escapeHtml(user.first_name)} ${escapeHtml(user.last_name)}`,
+    subject: `[${B.name}] New customer — ${user.first_name} ${user.last_name}`,
     html: baseLayout("New Customer", `
       <p class="eyebrow">Admin alert</p>
       <h1>New customer registered.</h1>
       <table class="info-table">
-        <tr><td>Name</td><td>${escapeHtml(user.first_name)} ${escapeHtml(user.last_name)}</td></tr>
-        <tr><td>Email</td><td>${escapeHtml(user.email)}</td></tr>
-        <tr><td>Phone</td><td>${escapeHtml(user.phone || "—")}</td></tr>
+        <tr><td>Name</td><td>${user.first_name} ${user.last_name}</td></tr>
+        <tr><td>Email</td><td>${user.email}</td></tr>
+        <tr><td>Phone</td><td>${user.phone || "—"}</td></tr>
         <tr><td>Registered</td><td>${new Date().toLocaleDateString("en-EG", { day:"numeric",month:"long",year:"numeric" })}</td></tr>
       </table>
       <a href="${B.website}/admin/customers" class="btn btn-outline">View Customers</a>
@@ -385,37 +369,38 @@ const templates = {
   }),
 
   adminContact: (form) => ({
-    subject: `[${B.name}] Contact — ${escapeHtml(form.subject)}`,
+    subject: `[${B.name}] Contact — ${form.subject}`,
     html: baseLayout("Contact Message", `
       <p class="eyebrow">Customer message</p>
       <h1>New contact form submission.</h1>
       <table class="info-table">
-        <tr><td>From</td><td>${escapeHtml(form.name)} &lt;${escapeHtml(form.email)}&gt;</td></tr>
-        <tr><td>Subject</td><td>${escapeHtml(form.subject)}</td></tr>
+        <tr><td>From</td><td>${form.name} &lt;${form.email}&gt;</td></tr>
+        <tr><td>Subject</td><td>${form.subject}</td></tr>
       </table>
-      <div class="alert-box" style="white-space:pre-line;">${escapeHtml(form.message)}</div>
-      <a href="mailto:${encodeURIComponent(form.email)}?subject=Re: ${encodeURIComponent(form.subject)}" class="btn">Reply to Customer</a>
+      <div class="alert-box" style="white-space:pre-line;">${form.message}</div>
+      <a href="mailto:${form.email}?subject=Re: ${encodeURIComponent(form.subject)}" class="btn">Reply to Customer</a>
     `),
   }),
 
-    newsletterConfirmation: (email) => ({
-    subject: `You're on the list — ${B.name}`,
-    html: baseLayout("Subscribed", `
-      <p class="eyebrow">Newsletter</p>
-      <h1>You're subscribed.</h1>
-      <p>Thanks for signing up to hear from ${B.name}. We'll only email you about new drops, restocks, and offers.</p>
-      <a href="${B.website}/shop" class="btn">Browse the Shop</a>
-      <hr class="divider" />
-      <p style="font-size:12px;color:${B.stone};">Didn't sign up for this? You can safely ignore this email.</p>
-    `),
-  }),
-
-  adminNewSubscriber: (email) => ({
-    subject: `[${B.name}] New newsletter subscriber`,
-    html: baseLayout("New Subscriber", `
-      <p class="eyebrow">Admin alert</p>
-      <h1>New newsletter signup.</h1>
-      <table class="info-table"><tr><td>Email</td><td>${escapeHtml(email)}</td></tr></table>
+  // Sent on demand from Admin > Customers > "Email Code" — a personal,
+  // single-customer loyalty coupon.
+  personalCoupon: (user, coupon) => ({
+    subject: `A little thank-you from ${B.name} — ${parseFloat(coupon.discount)}% off just for you`,
+    html: baseLayout("Your Discount Code", `
+      <p class="eyebrow">Just for you</p>
+      <h1>Here's a discount code, ${user.first_name}.</h1>
+      <p>As a thank-you for shopping with us, we've set aside a personal discount for your next order.</p>
+      <div class="coupon-box">
+        <p style="font-size:11px;text-transform:uppercase;letter-spacing:0.14em;color:${B.stone};">Your code</p>
+        <p class="coupon-code">${coupon.code}</p>
+        <p style="font-size:14px;color:${B.ink};margin:0;">${parseFloat(coupon.discount)}% off your next order</p>
+      </div>
+      <table class="info-table">
+        <tr><td>Valid from</td><td>${coupon.start_date}</td></tr>
+        <tr><td>Expires</td><td>${coupon.expiry_date}</td></tr>
+      </table>
+      <p style="font-size:12px;color:${B.stone};">This code is linked to your account and can only be used by you.</p>
+      <a href="${B.website}/shop" class="btn">Shop Now</a>
     `),
   }),
 };
@@ -505,16 +490,12 @@ const sendAdminContactEmail = (form) => {
   const t = templates.adminContact(form);
   return sendEmail({ to: adminEmail, ...t, emailType: "admin_contact" });
 };
-const sendNewsletterConfirmationEmail = (email) => {
-  const t = templates.newsletterConfirmation(email);
-  return sendEmail({ to: email, ...t, emailType: "welcome" });
-};
 
-const sendAdminNewSubscriberEmail = (email) => {
-  const adminEmail = process.env.ADMIN_NOTIFY_EMAIL;
-  if (!adminEmail) return Promise.resolve(false);
-  const t = templates.adminNewSubscriber(email);
-  return sendEmail({ to: adminEmail, ...t, emailType: "admin_contact" });
+// Sent on demand (not automatically) from Admin > Customers when the admin
+// clicks "Email Code" after creating a personal coupon.
+const sendPersonalCouponEmail = (user, coupon) => {
+  const t = templates.personalCoupon(user, coupon);
+  return sendEmail({ to: user.email, ...t, userId: user.id, emailType: "personal_coupon" });
 };
 
 module.exports = {
@@ -528,8 +509,7 @@ module.exports = {
   sendAdminLowStockEmail,
   sendAdminNewUserEmail,
   sendAdminContactEmail,
-  sendNewsletterConfirmationEmail,
-  sendAdminNewSubscriberEmail,
+  sendPersonalCouponEmail,
 };
 
 // ── 10. Customer: Return/Cancel request received ──────────────────────────

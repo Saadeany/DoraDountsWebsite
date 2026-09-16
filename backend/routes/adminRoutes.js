@@ -19,6 +19,7 @@ const {
   createCoupon,
   updateCoupon,
   deleteCoupon,
+  sendCouponEmail,
 } = require("../controllers/couponController");
 const {
   getAdminZones,
@@ -67,6 +68,7 @@ router.get("/coupons", getCoupons);
 router.post("/coupons", createCoupon);
 router.put("/coupons/:id", updateCoupon);
 router.delete("/coupons/:id", deleteCoupon);
+router.post("/coupons/:id/send-email", sendCouponEmail);
 
 // ---- Zones (delivery areas) ----
 router.get("/zones", getAdminZones);

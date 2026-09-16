@@ -1,5 +1,5 @@
 const { Coupon, User } = require("../models");
-const { Op } = require("sequelize");
+const { sendPersonalCouponEmail } = require("../utils/emailService");
 
 // @route POST /api/coupons/validate
 const validateCoupon = async (req, res, next) => {
@@ -107,4 +107,26 @@ const deleteCoupon = async (req, res, next) => {
   } catch (error) { next(error); }
 };
 
-module.exports = { validateCoupon, getCoupons, createCoupon, updateCoupon, deleteCoupon };
+// @route POST /api/admin/coupons/:id/send-email
+// Emails a personal (per-customer) coupon to the customer it belongs to.
+// Optional, on-demand — nothing sends this automatically when the coupon
+// is created.
+const sendCouponEmail = async (req, res, next) => {
+  try {
+    const coupon = await Coupon.findByPk(req.params.id, {
+      include: [{ model: User, attributes: ["id", "first_name", "last_name", "email"] }],
+    });
+    if (!coupon) return res.status(404).json({ message: "Coupon not found." });
+    if (!coupon.User) {
+      return res.status(400).json({ message: "This coupon isn't linked to a specific customer, so there's no one to email it to." });
+    }
+
+    const sent = await sendPersonalCouponEmail(coupon.User, coupon);
+    if (!sent) {
+      return res.status(502).json({ message: "The email failed to send — check SMTP settings or the Email Logs page for details." });
+    }
+    res.json({ message: `Coupon emailed to ${coupon.User.first_name} at ${coupon.User.email}.` });
+  } catch (error) { next(error); }
+};
+
+module.exports = { validateCoupon, getCoupons, createCoupon, updateCoupon, deleteCoupon, sendCouponEmail };

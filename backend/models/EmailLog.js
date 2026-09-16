@@ -14,7 +14,8 @@ const EmailLog = sequelize.define(
       type: DataTypes.ENUM(
         "welcome", "verify_email", "password_reset",
         "order_confirmation", "order_status_update",
-        "admin_new_order", "admin_low_stock", "admin_new_user", "admin_contact"
+        "admin_new_order", "admin_low_stock", "admin_new_user", "admin_contact",
+        "personal_coupon"
       ),
       allowNull: false,
     },
