@@ -4,31 +4,13 @@ import { motion } from "framer-motion";
 import { ArrowRight, ChevronRight } from "lucide-react";
 
 import { getProducts, getCategories } from "../api/products";
-import RushHourBanner from "../components/product/RushHourBanner";
 import ProductCard from "../components/product/ProductCard";
 import QuickViewModal from "../components/product/QuickViewModal";
+import RushHourBanner from "../components/product/RushHourBanner";
 import Loader from "../components/common/Loader";
 import useSEO from "../utils/useSEO";
 
 import doraLogo from "../assets/dora-logo.png";
-
-/* ─────────────────────────────────────────────────────────────
-   Category Icons
-───────────────────────────────────────────────────────────── */
-
-const CATEGORY_ICONS = {
-  Donuts: "🍩",
-  Pastries: "🥐",
-  Muffins: "🧁",
-  Waffles: "🧇",
-
-  // Keep these temporarily in case old database categories still exist.
-  Hoodies: "🧥",
-  "T-Shirts": "👕",
-  Pants: "👖",
-  Oversized: "📦",
-  Accessories: "🎒",
-};
 
 /* ─────────────────────────────────────────────────────────────
    Section Header
@@ -89,6 +71,49 @@ const ProductSection = ({
 );
 
 /* ─────────────────────────────────────────────────────────────
+   Category Tile
+   Uses the uploaded category image from the database.
+───────────────────────────────────────────────────────────── */
+
+const CategoryTile = ({ category }) => (
+  <motion.div
+    whileHover={{ y: -4 }}
+    transition={{ duration: 0.2 }}
+  >
+    <Link
+      to={`/shop?category=${category.slug}`}
+      className="group relative block aspect-[4/5] overflow-hidden border-2 border-stone/20 bg-paper transition-colors hover:border-ink"
+    >
+      {/* Category Image */}
+      <img
+        src={category.image || "/placeholder.svg"}
+        alt={category.name}
+        className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
+        loading="lazy"
+      />
+
+      {/* Gradient overlay */}
+      <div
+        className="pointer-events-none absolute inset-0 bg-gradient-to-t from-ink/80 via-ink/20 to-transparent"
+        aria-hidden="true"
+      />
+
+      {/* Category information */}
+      <div className="absolute inset-x-0 bottom-0 flex items-center justify-between p-4">
+        <span className="text-sm font-medium uppercase tracking-wide text-paper">
+          {category.name}
+        </span>
+
+        <ChevronRight
+          size={16}
+          className="text-paper/80 transition-transform duration-300 group-hover:translate-x-1"
+        />
+      </div>
+    </Link>
+  </motion.div>
+);
+
+/* ─────────────────────────────────────────────────────────────
    Home Page
 ───────────────────────────────────────────────────────────── */
 
@@ -96,7 +121,7 @@ const HomePage = () => {
   useSEO({
     title: undefined,
     description:
-      "DORA Donuts & Pastry — freshly made donuts and pastries. Order online.",
+      "DORA Donuts & Pastry — freshly made donuts, muffins, waffles and pastries. Order online.",
   });
 
   const navigate = useNavigate();
@@ -167,9 +192,11 @@ const HomePage = () => {
           categoriesResponse?.data?.categories || []
         );
       } catch (error) {
-        console.error("Failed to load homepage data:", error);
+        console.error(
+          "Failed to load homepage data:",
+          error
+        );
 
-        // Sections will simply remain empty if the API fails.
         setNewArrivals([]);
         setBestSellers([]);
         setTrending([]);
@@ -220,8 +247,8 @@ const HomePage = () => {
 
           {/* Hero Description */}
           <p className="max-w-sm text-sm leading-relaxed tracking-wide text-charcoal/70 sm:text-base">
-            Freshly made donuts and pastries, baked with love —
-            every single day.
+            Freshly made donuts, muffins, waffles and pastries,
+            baked with love every single day.
           </p>
 
           {/* Order Button */}
@@ -261,33 +288,10 @@ const HomePage = () => {
         ) : categories.length > 0 ? (
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
             {categories.map((category) => (
-              <motion.div
+              <CategoryTile
                 key={category.id}
-                whileHover={{
-                  y: -4,
-                }}
-                transition={{
-                  duration: 0.2,
-                }}
-              >
-                <Link
-                  to={`/shop?category=${category.slug}`}
-                  className="group flex flex-col items-center gap-4 border-2 border-stone/20 bg-paper p-6 text-center transition-colors hover:border-ink"
-                >
-                  <span className="text-3xl">
-                    {CATEGORY_ICONS[category.name] || "🍩"}
-                  </span>
-
-                  <span className="text-sm uppercase tracking-wide text-charcoal">
-                    {category.name}
-                  </span>
-
-                  <ChevronRight
-                    size={14}
-                    className="text-stone transition-colors group-hover:text-ink"
-                  />
-                </Link>
-              </motion.div>
+                category={category}
+              />
             ))}
           </div>
         ) : (
@@ -314,13 +318,14 @@ const HomePage = () => {
       )}
 
       {/* ═══════════════════════════════════════════════════════
-          DONUTS / PASTRIES
+          FEATURED CATEGORIES
       ═══════════════════════════════════════════════════════ */}
 
       <section className="mx-auto grid max-w-7xl grid-cols-1 gap-4 px-4 py-4 sm:grid-cols-2 sm:px-6 lg:px-8">
+
         {/* Donuts */}
         <Link
-          to="/shop?category=donuts"
+          to="/shop?category=donut"
           className="group relative flex min-h-56 flex-col items-start justify-end overflow-hidden border-2 border-ink bg-paper p-8"
         >
           <div
@@ -342,9 +347,9 @@ const HomePage = () => {
           />
         </Link>
 
-        {/* Pastries */}
+        {/* Waffles */}
         <Link
-          to="/shop?category=pastries"
+          to="/shop?category=waffle"
           className="group relative flex min-h-56 flex-col items-start justify-end overflow-hidden border-2 border-stone bg-paper p-8"
         >
           <div
@@ -430,7 +435,7 @@ const HomePage = () => {
       )}
 
       {/* ═══════════════════════════════════════════════════════
-          QUICK VIEW MODAL
+          QUICK VIEW
       ═══════════════════════════════════════════════════════ */}
 
       <QuickViewModal

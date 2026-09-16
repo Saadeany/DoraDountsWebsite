@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { Search, ShieldBan, ShieldCheck, Trash2, Gift, Award } from "lucide-react";
-import { getAdminUsers, toggleBlockUser, deleteUser } from "../../api/admin";
-import { createCoupon } from "../../api/admin";
+import { Search, ShieldBan, ShieldCheck, Trash2, Gift, Award, Mail, MessageCircle, Check } from "lucide-react";
+import { getAdminUsers, toggleBlockUser, deleteUser, createCoupon, sendCouponEmail } from "../../api/admin";
+import { buildWhatsAppLink } from "../../utils/whatsapp";
 import Loader from "../../components/common/Loader";
 
 // Simple, transparent tiering by order count — the raw numbers (orders +
@@ -40,6 +40,12 @@ const emptyDiscountForm = (customer) => {
   };
 };
 
+const buildCouponWhatsAppMessage = (customer, coupon) =>
+  `Hi ${customer.first_name}! 🎉 As a thank-you for being a loyal Felt & Form customer, here's a discount just for you:\n\n` +
+  `*${coupon.code}* — ${parseFloat(coupon.discount)}% off your next order\n` +
+  `Valid until ${coupon.expiry_date}\n\n` +
+  `Shop now: ${window.location.origin}/shop`;
+
 const AdminCustomersPage = () => {
   const [users, setUsers] = useState([]);
   const [pagination, setPagination] = useState({});
@@ -51,7 +57,13 @@ const AdminCustomersPage = () => {
   const [discountForm, setDiscountForm] = useState(emptyDiscountForm());
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState("");
-  const [successMsg, setSuccessMsg] = useState("");
+
+  // Set once the coupon has actually been created — unlocks the optional
+  // "Email Code" / "Send via WhatsApp" buttons.
+  const [createdCoupon, setCreatedCoupon] = useState(null);
+  const [emailSending, setEmailSending] = useState(false);
+  const [emailSent, setEmailSent] = useState(false);
+  const [emailErr, setEmailErr] = useState("");
 
   const fetchUsers = useCallback(async () => {
     setLoading(true);
@@ -66,7 +78,7 @@ const AdminCustomersPage = () => {
   const openDiscount = (customer) => {
     setDiscountTarget(customer);
     setDiscountForm(emptyDiscountForm(customer));
-    setErr(""); setSuccessMsg("");
+    setErr(""); setCreatedCoupon(null); setEmailSent(false); setEmailErr("");
   };
 
   const handleGiveDiscount = async () => {
@@ -76,7 +88,7 @@ const AdminCustomersPage = () => {
     }
     setSaving(true); setErr("");
     try {
-      await createCoupon({
+      const { data } = await createCoupon({
         code: discountForm.code.toUpperCase().trim(),
         discount: discountForm.discount,
         start_date: discountForm.start_date,
@@ -84,11 +96,23 @@ const AdminCustomersPage = () => {
         usage_limit: discountForm.usage_limit || 1,
         user_id: discountTarget.id,
       });
-      setSuccessMsg(`Coupon "${discountForm.code.toUpperCase().trim()}" created — only ${discountTarget.first_name} can use it, at checkout, like any normal code.`);
+      setCreatedCoupon(data.coupon);
     } catch (e) {
       setErr(e.response?.data?.message || "Could not create coupon — that code might already be taken.");
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleSendEmail = async () => {
+    setEmailSending(true); setEmailErr("");
+    try {
+      await sendCouponEmail(createdCoupon.id);
+      setEmailSent(true);
+    } catch (e) {
+      setEmailErr(e.response?.data?.message || "Could not send the email.");
+    } finally {
+      setEmailSending(false);
     }
   };
 
@@ -166,8 +190,39 @@ const AdminCustomersPage = () => {
               {parseFloat(discountTarget.total_spent || 0).toLocaleString()} EGP spent
             </p>
 
-            {successMsg ? (
-              <div className="border border-green-200 bg-green-50 p-3 text-sm text-green-700">{successMsg}</div>
+            {createdCoupon ? (
+              <>
+                <div className="border border-green-200 bg-green-50 p-3 text-sm text-green-700">
+                  Coupon <strong>{createdCoupon.code}</strong> created — only {discountTarget.first_name} can redeem it.
+                </div>
+
+                {/* Optional — send it to the customer */}
+                <div className="space-y-2">
+                  <p className="eyebrow text-charcoal/50">Optional — let them know</p>
+                  <div className="flex flex-col gap-2 sm:flex-row">
+                    <button
+                      onClick={handleSendEmail}
+                      disabled={emailSending || emailSent}
+                      className="btn-outline flex-1 text-xs py-2.5 flex items-center justify-center gap-1.5 disabled:opacity-60"
+                    >
+                      {emailSent ? <Check size={14} /> : <Mail size={14} />}
+                      {emailSending ? "Sending…" : emailSent ? "Emailed" : "Email Code"}
+                    </button>
+                    <a
+                      href={buildWhatsAppLink(discountTarget.phone, buildCouponWhatsAppMessage(discountTarget, createdCoupon))}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="btn-outline flex-1 text-xs py-2.5 flex items-center justify-center gap-1.5"
+                    >
+                      <MessageCircle size={14} /> Send via WhatsApp
+                    </a>
+                  </div>
+                  {emailErr && <p className="text-xs text-red-500">{emailErr}</p>}
+                  {!discountTarget.phone && (
+                    <p className="text-xs text-charcoal/45">No phone number on file — WhatsApp will open without a pre-selected contact.</p>
+                  )}
+                </div>
+              </>
             ) : (
               <>
                 {[
@@ -193,12 +248,12 @@ const AdminCustomersPage = () => {
 
             {err && <p className="text-sm text-red-500">{err}</p>}
             <div className="flex gap-3 pt-2">
-              {!successMsg && (
+              {!createdCoupon && (
                 <button onClick={handleGiveDiscount} disabled={saving} className="btn-primary">
                   {saving ? "Creating…" : "Create Coupon"}
                 </button>
               )}
-              <button onClick={() => setDiscountTarget(null)} className="btn-outline">{successMsg ? "Close" : "Cancel"}</button>
+              <button onClick={() => setDiscountTarget(null)} className="btn-outline">{createdCoupon ? "Close" : "Cancel"}</button>
             </div>
           </div>
         </div>

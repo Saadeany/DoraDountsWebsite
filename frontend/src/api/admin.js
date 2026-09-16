@@ -36,6 +36,7 @@ export const getAdminCoupons = () => api.get("/admin/coupons");
 export const createCoupon = (data) => api.post("/admin/coupons", data);
 export const updateCoupon = (id, data) => api.put(`/admin/coupons/${id}`, data);
 export const deleteCoupon = (id) => api.delete(`/admin/coupons/${id}`);
+export const sendCouponEmail = (id) => api.post(`/admin/coupons/${id}/send-email`);
 
 // ---- Zones (delivery areas) ----
 export const getAdminZones = () => api.get("/admin/zones");

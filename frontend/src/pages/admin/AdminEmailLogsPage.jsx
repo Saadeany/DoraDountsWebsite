@@ -13,6 +13,7 @@ const TYPE_LABELS = {
   admin_low_stock: "Admin: Low Stock",
   admin_new_user: "Admin: New User",
   admin_contact: "Admin: Contact",
+  personal_coupon: "Personal Coupon",
 };
 
 const AdminEmailLogsPage = () => {
