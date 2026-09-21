@@ -1,26 +1,21 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { Plus, Pencil, Trash2, Search } from "lucide-react";
 import { getAdminProducts, createProduct, updateProduct, deleteProduct, deleteProductImage } from "../../api/admin";
-import { getCategories, getFilterOptions } from "../../api/products";
+import { getCategories } from "../../api/products";
 import { formatPrice, getFinalPrice, getPrimaryImage } from "../../utils/format";
 import Loader from "../../components/common/Loader";
 
-const GENDER_OPTIONS = ["men", "women", "unisex"];
 const TAGS_OPTIONS = ["new", "best_seller", "trending", "sale"];
 
 const emptyForm = () => ({
   name: "", description: "", price: "", discount: "0", stock: "",
-  category_id: "", material: "", brand: "Felt & Form", gender: "unisex",
-  tags: [], sizes: [], colors: [],
-  images: [],
+  category_id: "", tags: [], images: [],
 });
 
 const AdminProductsPage = () => {
   const [products, setProducts] = useState([]);
   const [pagination, setPagination] = useState({});
   const [categories, setCategories] = useState([]);
-  const [sizes, setSizes] = useState([]);
-  const [colors, setColors] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
@@ -44,7 +39,6 @@ const AdminProductsPage = () => {
   useEffect(() => { fetchProducts(); }, [fetchProducts]);
   useEffect(() => {
     getCategories().then(({ data }) => setCategories(data.categories)).catch(() => {});
-    getFilterOptions().then(({ data }) => { setSizes(data.sizes); setColors(data.colors); }).catch(() => {});
   }, []);
 
   const openAdd = () => { setForm(emptyForm()); setEditing(null); setFormError(""); setModal("add"); };
@@ -52,11 +46,8 @@ const AdminProductsPage = () => {
     setEditing(p);
     setForm({
       name: p.name, description: p.description || "", price: p.price, discount: p.discount,
-      stock: p.stock, category_id: p.category_id || "", material: p.material || "",
-      brand: p.brand || "Felt & Form", gender: p.gender,
+      stock: p.stock, category_id: p.category_id || "",
       tags: p.tags || [],
-      sizes: p.sizes?.map((s) => ({ size_id: s.id, stock: s.ProductSize?.stock || 0 })) || [],
-      colors: p.colors?.map((c) => c.id) || [],
       images: [],
     });
     setFormError("");
@@ -75,11 +66,9 @@ const AdminProductsPage = () => {
     setFormError("");
     try {
       const fd = new FormData();
-      const fields = ["name", "description", "price", "discount", "stock", "category_id", "material", "brand", "gender"];
+      const fields = ["name", "description", "price", "discount", "stock", "category_id"];
       fields.forEach((f) => form[f] !== undefined && fd.append(f, form[f]));
       fd.append("tags", JSON.stringify(form.tags));
-      fd.append("sizes", JSON.stringify(form.sizes));
-      fd.append("colors", JSON.stringify(form.colors));
       form.images.forEach((img) => fd.append("images", img));
 
       if (modal === "add") {
@@ -99,16 +88,6 @@ const AdminProductsPage = () => {
   const toggleTag = (tag) => setForm((f) => ({
     ...f, tags: f.tags.includes(tag) ? f.tags.filter((t) => t !== tag) : [...f.tags, tag],
   }));
-  const toggleColor = (id) => setForm((f) => ({
-    ...f, colors: f.colors.includes(id) ? f.colors.filter((c) => c !== id) : [...f.colors, id],
-  }));
-  const toggleSize = (id) => setForm((f) => {
-    const exists = f.sizes.find((s) => s.size_id === id);
-    return {
-      ...f,
-      sizes: exists ? f.sizes.filter((s) => s.size_id !== id) : [...f.sizes, { size_id: id, stock: 0 }],
-    };
-  });
 
   return (
     <div className="space-y-6">
@@ -192,7 +171,6 @@ const AdminProductsPage = () => {
               {[
                 { label: "Name *", key: "name" }, { label: "Price (EGP) *", key: "price", type: "number" },
                 { label: "Discount (%)", key: "discount", type: "number" }, { label: "Stock", key: "stock", type: "number" },
-                { label: "Material", key: "material" }, { label: "Brand", key: "brand" },
               ].map(({ label, key, type = "text" }) => (
                 <div key={key}>
                   <label className="eyebrow mb-1 block text-charcoal/60">{label}</label>
@@ -204,12 +182,6 @@ const AdminProductsPage = () => {
                 <select value={form.category_id} onChange={(e) => setForm((f) => ({ ...f, category_id: e.target.value }))} className="input-field">
                   <option value="">— None —</option>
                   {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-                </select>
-              </div>
-              <div>
-                <label className="eyebrow mb-1 block text-charcoal/60">Gender</label>
-                <select value={form.gender} onChange={(e) => setForm((f) => ({ ...f, gender: e.target.value }))} className="input-field">
-                  {GENDER_OPTIONS.map((g) => <option key={g} value={g}>{g}</option>)}
                 </select>
               </div>
             </div>
@@ -224,51 +196,6 @@ const AdminProductsPage = () => {
               <div className="flex flex-wrap gap-2">
                 {TAGS_OPTIONS.map((t) => (
                   <button key={t} type="button" onClick={() => toggleTag(t)} className={`border px-3 py-1 text-xs transition-colors ${form.tags.includes(t) ? "border-ink bg-ink text-paper" : "border-ink/20 hover:border-ink"}`}>{t}</button>
-                ))}
-              </div>
-            </div>
-          <div>
-            <p className="eyebrow mb-2 text-charcoal/60">Sizes &amp; Stock</p>
-            <div className="flex flex-wrap gap-2 mb-3">
-              {sizes.map((s) => (
-                <button key={s.id} type="button" onClick={() => toggleSize(s.id)}
-                  className={`border px-3 py-1 text-xs transition-colors ${form.sizes.find((fs) => fs.size_id === s.id) ? "border-ink bg-ink text-paper" : "border-ink/20 hover:border-ink"}`}>
-                  {s.name}
-                </button>
-              ))}
-            </div>
-            {form.sizes.length > 0 && (
-              <div className="space-y-2">
-                {form.sizes.map((fs) => {
-                  const sizeName = sizes.find((s) => s.id === fs.size_id)?.name;
-                  return (
-                    <div key={fs.size_id} className="flex items-center gap-3">
-                      <span className="w-16 text-xs text-charcoal/70">{sizeName}</span>
-                      <input
-                        type="number"
-                        min="0"
-                        value={fs.stock}
-                        onChange={(e) => setForm((f) => ({
-                          ...f,
-                          sizes: f.sizes.map((x) =>
-                            x.size_id === fs.size_id ? { ...x, stock: parseInt(e.target.value, 10) || 0 } : x
-                          ),
-                        }))}
-                        className="input-field text-xs py-1.5 w-24"
-                        placeholder="Stock"
-                      />
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-
-            <div>
-              <p className="eyebrow mb-2 text-charcoal/60">Colors</p>
-              <div className="flex flex-wrap gap-2">
-                {colors.map((c) => (
-                  <button key={c.id} type="button" onClick={() => toggleColor(c.id)} title={c.name} className={`h-8 w-8 rounded-full border-2 transition-transform ${form.colors.includes(c.id) ? "border-ink scale-110" : "border-ink/10"}`} style={{ backgroundColor: c.hex_code || "#ccc" }} />
                 ))}
               </div>
             </div>

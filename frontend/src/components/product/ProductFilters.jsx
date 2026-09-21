@@ -8,11 +8,11 @@ const SORT_OPTIONS = [
   { value: "best_rated", label: "Best Rated" },
 ];
 
-const ProductFilters = ({ filters, setFilters, categories = [], sizes = [], colors = [] }) => {
+const ProductFilters = ({ filters, setFilters, categories = [] }) => {
   const update = (key, value) => setFilters((prev) => ({ ...prev, [key]: value }));
 
   const clearAll = () =>
-    setFilters({ category: "", min_price: "", max_price: "", size: "", color: "", sort: "newest", availability: "" });
+    setFilters({ category: "", min_price: "", max_price: "", sort: "newest" });
 
   return (
     <aside className="space-y-8">
@@ -80,40 +80,6 @@ const ProductFilters = ({ filters, setFilters, categories = [], sizes = [], colo
             className="input-field"
             min="0"
           />
-        </div>
-      </div>
-
-      <div>
-        <p className="eyebrow mb-3">Size</p>
-        <div className="flex flex-wrap gap-2">
-          {sizes.map((s) => (
-            <button
-              key={s.id}
-              onClick={() => update("size", filters.size === s.name ? "" : s.name)}
-              className={`border px-3 py-1.5 text-xs uppercase transition-colors ${
-                filters.size === s.name ? "border-ink bg-ink text-paper" : "border-ink/25 hover:border-ink"
-              }`}
-            >
-              {s.name}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <div>
-        <p className="eyebrow mb-3">Color</p>
-        <div className="flex flex-wrap gap-2">
-          {colors.map((c) => (
-            <button
-              key={c.id}
-              title={c.name}
-              onClick={() => update("color", filters.color === c.name ? "" : c.name)}
-              className={`h-7 w-7 rounded-full border-2 transition-transform ${
-                filters.color === c.name ? "border-ink scale-110" : "border-ink/10"
-              }`}
-              style={{ backgroundColor: c.hex_code || "#ccc" }}
-            />
-          ))}
         </div>
       </div>
     </aside>

@@ -26,7 +26,7 @@ const ForgotPasswordPage = () => {
     <div className="flex min-h-[70vh] items-center justify-center px-4">
       <div className="w-full max-w-md">
         <div className="mb-8 text-center">
-          <h1 className="font-display text-4xl">Dora Dounts</h1>
+          <h1 className="font-display text-4xl">Dora Donuts</h1>
           <div className="stitch-rule mx-auto mt-3 w-20 text-ink" />
           <h2 className="mt-5 font-display text-2xl">Reset your password</h2>
         </div>

@@ -4,7 +4,7 @@ import useSEO from "../utils/useSEO";
 const AboutPage = () => {
   useSEO({
     title: "Our Story",
-    description: "Learn how Dora Dounts started in Cairo and why we make donuts that are fresh and delicious.",
+    description: "Learn how Dora Donuts started in Cairo and why we make donuts that are fresh and delicious.",
   });
 
   return (
@@ -21,7 +21,7 @@ const AboutPage = () => {
           {
             eyebrow: "The idea",
             title: "Made to Make You Smile",
-            body: "Dora Dounts started with a simple idea: donuts should be more than just a quick treat. They should be fresh, delicious, and something you look forward to. We make every donut with care, bringing together great flavors, soft dough, and a little bit of fun in every bite.",
+            body: "Dora Donuts started with a simple idea: donuts should be more than just a quick treat. They should be fresh, delicious, and something you look forward to. We make every donut with care, bringing together great flavors, soft dough, and a little bit of fun in every bite.",
           },
           {
             eyebrow: "The craft",
@@ -31,7 +31,7 @@ const AboutPage = () => {
           {
             eyebrow: "The future",
             title: "Always Something Sweet",
-            body: "We're not here to make donuts boring. We're constantly exploring new flavors, combinations, and ideas while keeping the favorites you already love. Whether you're grabbing a box for yourself, sharing with friends, or celebrating something special, Dora Dounts is here to make the moment a little sweeter.",
+            body: "We're not here to make donuts boring. We're constantly exploring new flavors, combinations, and ideas while keeping the favorites you already love. Whether you're grabbing a box for yourself, sharing with friends, or celebrating something special, Dora Donuts is here to make the moment a little sweeter.",
           },
         ].map(({ eyebrow, title, body }) => (
           <div key={title} className="space-y-3">

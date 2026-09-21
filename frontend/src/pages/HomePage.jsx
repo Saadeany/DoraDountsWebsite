@@ -4,13 +4,24 @@ import { motion } from "framer-motion";
 import { ArrowRight, ChevronRight } from "lucide-react";
 
 import { getProducts, getCategories } from "../api/products";
+import RushHourBanner from "../components/product/RushHourBanner";
 import ProductCard from "../components/product/ProductCard";
 import QuickViewModal from "../components/product/QuickViewModal";
-import RushHourBanner from "../components/product/RushHourBanner";
 import Loader from "../components/common/Loader";
 import useSEO from "../utils/useSEO";
 
 import doraLogo from "../assets/dora-logo.png";
+
+/* ─────────────────────────────────────────────────────────────
+   Category Icons — keyed by the exact category name in the DB
+───────────────────────────────────────────────────────────── */
+
+const CATEGORY_ICONS = {
+  Donut: "🍩",
+  Muffin: "🧁",
+  Waffle: "🧇",
+  Pastry: "🥐",
+};
 
 /* ─────────────────────────────────────────────────────────────
    Section Header
@@ -71,49 +82,6 @@ const ProductSection = ({
 );
 
 /* ─────────────────────────────────────────────────────────────
-   Category Tile
-   Uses the uploaded category image from the database.
-───────────────────────────────────────────────────────────── */
-
-const CategoryTile = ({ category }) => (
-  <motion.div
-    whileHover={{ y: -4 }}
-    transition={{ duration: 0.2 }}
-  >
-    <Link
-      to={`/shop?category=${category.slug}`}
-      className="group relative block aspect-[4/5] overflow-hidden border-2 border-stone/20 bg-paper transition-colors hover:border-ink"
-    >
-      {/* Category Image */}
-      <img
-        src={category.image || "/placeholder.svg"}
-        alt={category.name}
-        className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
-        loading="lazy"
-      />
-
-      {/* Gradient overlay */}
-      <div
-        className="pointer-events-none absolute inset-0 bg-gradient-to-t from-ink/80 via-ink/20 to-transparent"
-        aria-hidden="true"
-      />
-
-      {/* Category information */}
-      <div className="absolute inset-x-0 bottom-0 flex items-center justify-between p-4">
-        <span className="text-sm font-medium uppercase tracking-wide text-paper">
-          {category.name}
-        </span>
-
-        <ChevronRight
-          size={16}
-          className="text-paper/80 transition-transform duration-300 group-hover:translate-x-1"
-        />
-      </div>
-    </Link>
-  </motion.div>
-);
-
-/* ─────────────────────────────────────────────────────────────
    Home Page
 ───────────────────────────────────────────────────────────── */
 
@@ -121,7 +89,7 @@ const HomePage = () => {
   useSEO({
     title: undefined,
     description:
-      "DORA Donuts & Pastry — freshly made donuts, muffins, waffles and pastries. Order online.",
+      "DORA Donuts & Pastry — freshly made donuts and pastries. Order online.",
   });
 
   const navigate = useNavigate();
@@ -135,10 +103,6 @@ const HomePage = () => {
   const [loading, setLoading] = useState(true);
   const [quickViewProduct, setQuickViewProduct] = useState(null);
 
-  /* ─────────────────────────────────────────────────────────
-     Load homepage data
-  ────────────────────────────────────────────────────────── */
-
   useEffect(() => {
     const load = async () => {
       try {
@@ -149,54 +113,20 @@ const HomePage = () => {
           saleResponse,
           categoriesResponse,
         ] = await Promise.all([
-          getProducts({
-            tag: "new",
-            limit: 4,
-          }),
-
-          getProducts({
-            tag: "best_seller",
-            limit: 4,
-          }),
-
-          getProducts({
-            tag: "trending",
-            limit: 4,
-          }),
-
-          getProducts({
-            tag: "sale",
-            limit: 4,
-          }),
-
+          getProducts({ tag: "new", limit: 4 }),
+          getProducts({ tag: "best_seller", limit: 4 }),
+          getProducts({ tag: "trending", limit: 4 }),
+          getProducts({ tag: "sale", limit: 4 }),
           getCategories(),
         ]);
 
-        setNewArrivals(
-          newArrivalsResponse?.data?.products || []
-        );
-
-        setBestSellers(
-          bestSellersResponse?.data?.products || []
-        );
-
-        setTrending(
-          trendingResponse?.data?.products || []
-        );
-
-        setSaleItems(
-          saleResponse?.data?.products || []
-        );
-
-        setCategories(
-          categoriesResponse?.data?.categories || []
-        );
+        setNewArrivals(newArrivalsResponse?.data?.products || []);
+        setBestSellers(bestSellersResponse?.data?.products || []);
+        setTrending(trendingResponse?.data?.products || []);
+        setSaleItems(saleResponse?.data?.products || []);
+        setCategories(categoriesResponse?.data?.categories || []);
       } catch (error) {
-        console.error(
-          "Failed to load homepage data:",
-          error
-        );
-
+        console.error("Failed to load homepage data:", error);
         setNewArrivals([]);
         setBestSellers([]);
         setTrending([]);
@@ -212,53 +142,33 @@ const HomePage = () => {
 
   return (
     <>
-      {/* ═══════════════════════════════════════════════════════
-          HERO
-      ═══════════════════════════════════════════════════════ */}
-
+      {/* HERO */}
       <section className="relative flex min-h-[85vh] flex-col items-center justify-center overflow-hidden bg-paper">
-        {/* Decorative border */}
         <div
           className="pointer-events-none absolute inset-6 border border-dashed border-stone/25"
           aria-hidden="true"
         />
 
         <motion.div
-          initial={{
-            opacity: 0,
-            y: 30,
-          }}
-          animate={{
-            opacity: 1,
-            y: 0,
-          }}
-          transition={{
-            duration: 0.8,
-            ease: "easeOut",
-          }}
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, ease: "easeOut" }}
           className="relative z-10 flex flex-col items-center gap-6 px-4 text-center"
         >
-          {/* Dora Logo */}
           <img
             src={doraLogo}
             alt="DORA Donuts & Pastry"
             className="w-full max-w-md sm:max-w-lg"
           />
 
-          {/* Hero Description */}
           <p className="max-w-sm text-sm leading-relaxed tracking-wide text-charcoal/70 sm:text-base">
-            Freshly made donuts, muffins, waffles and pastries,
-            baked with love every single day.
+            Freshly made donuts and pastries, baked with love —
+            every single day.
           </p>
 
-          {/* Order Button */}
           <motion.button
-            whileHover={{
-              scale: 1.03,
-            }}
-            whileTap={{
-              scale: 0.98,
-            }}
+            whileHover={{ scale: 1.03 }}
+            whileTap={{ scale: 0.98 }}
             onClick={() => navigate("/shop")}
             className="mt-2 border-2 border-ink bg-paper px-10 py-4 text-xs font-medium uppercase tracking-widest text-ink transition-colors hover:bg-ink hover:text-paper"
           >
@@ -267,31 +177,41 @@ const HomePage = () => {
         </motion.div>
       </section>
 
-      {/* ═══════════════════════════════════════════════════════
-          RUSH HOUR
-      ═══════════════════════════════════════════════════════ */}
-
+      {/* RUSH HOUR */}
       <RushHourBanner />
 
-      {/* ═══════════════════════════════════════════════════════
-          CATEGORIES
-      ═══════════════════════════════════════════════════════ */}
-
+      {/* CATEGORIES */}
       <section className="mx-auto max-w-7xl bg-paper px-4 py-20 sm:px-6 lg:px-8">
-        <SectionHeader
-          eyebrow="Browse by"
-          title="Categories"
-        />
+        <SectionHeader eyebrow="Browse by" title="Categories" />
 
         {loading ? (
           <Loader />
         ) : categories.length > 0 ? (
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
             {categories.map((category) => (
-              <CategoryTile
+              <motion.div
                 key={category.id}
-                category={category}
-              />
+                whileHover={{ y: -4 }}
+                transition={{ duration: 0.2 }}
+              >
+                <Link
+                  to={`/shop?category=${category.slug}`}
+                  className="group flex flex-col items-center gap-4 border-2 border-stone/20 bg-paper p-6 text-center transition-colors hover:border-ink"
+                >
+                  <span className="text-3xl">
+                    {CATEGORY_ICONS[category.name] || "🍩"}
+                  </span>
+
+                  <span className="text-sm uppercase tracking-wide text-charcoal">
+                    {category.name}
+                  </span>
+
+                  <ChevronRight
+                    size={14}
+                    className="text-stone transition-colors group-hover:text-ink"
+                  />
+                </Link>
+              </motion.div>
             ))}
           </div>
         ) : (
@@ -301,10 +221,7 @@ const HomePage = () => {
         )}
       </section>
 
-      {/* ═══════════════════════════════════════════════════════
-          NEW ARRIVALS
-      ═══════════════════════════════════════════════════════ */}
-
+      {/* NEW ARRIVALS */}
       {newArrivals.length > 0 && (
         <div className="bg-paper">
           <ProductSection
@@ -317,13 +234,8 @@ const HomePage = () => {
         </div>
       )}
 
-      {/* ═══════════════════════════════════════════════════════
-          FEATURED CATEGORIES
-      ═══════════════════════════════════════════════════════ */}
-
+      {/* DONUTS / PASTRIES banner */}
       <section className="mx-auto grid max-w-7xl grid-cols-1 gap-4 px-4 py-4 sm:grid-cols-2 sm:px-6 lg:px-8">
-
-        {/* Donuts */}
         <Link
           to="/shop?category=donut"
           className="group relative flex min-h-56 flex-col items-start justify-end overflow-hidden border-2 border-ink bg-paper p-8"
@@ -332,39 +244,24 @@ const HomePage = () => {
             className="pointer-events-none absolute inset-4 border border-dashed border-ink/20 transition-all duration-500 group-hover:inset-2"
             aria-hidden="true"
           />
-
-          <p className="eyebrow mb-2 text-stone">
-            Explore
-          </p>
-
-          <h3 className="font-display text-4xl text-ink">
-            Donuts
-          </h3>
-
+          <p className="eyebrow mb-2 text-stone">Explore</p>
+          <h3 className="font-display text-4xl text-ink">Donuts</h3>
           <ArrowRight
             size={20}
             className="mt-3 text-ink transition-transform group-hover:translate-x-2"
           />
         </Link>
 
-        {/* Waffles */}
         <Link
-          to="/shop?category=waffle"
+          to="/shop?category=pastry"
           className="group relative flex min-h-56 flex-col items-start justify-end overflow-hidden border-2 border-stone bg-paper p-8"
         >
           <div
             className="pointer-events-none absolute inset-4 border border-dashed border-stone/20 transition-all duration-500 group-hover:inset-2"
             aria-hidden="true"
           />
-
-          <p className="eyebrow mb-2 text-ink">
-            Explore
-          </p>
-
-          <h3 className="font-display text-4xl text-stone">
-            Pastries
-          </h3>
-
+          <p className="eyebrow mb-2 text-ink">Explore</p>
+          <h3 className="font-display text-4xl text-stone">Pastries</h3>
           <ArrowRight
             size={20}
             className="mt-3 text-stone transition-transform group-hover:translate-x-2"
@@ -372,10 +269,7 @@ const HomePage = () => {
         </Link>
       </section>
 
-      {/* ═══════════════════════════════════════════════════════
-          BEST SELLERS
-      ═══════════════════════════════════════════════════════ */}
-
+      {/* BEST SELLERS */}
       {bestSellers.length > 0 && (
         <ProductSection
           eyebrow="Crowd favourites"
@@ -386,10 +280,7 @@ const HomePage = () => {
         />
       )}
 
-      {/* ═══════════════════════════════════════════════════════
-          TRENDING
-      ═══════════════════════════════════════════════════════ */}
-
+      {/* TRENDING */}
       {trending.length > 0 && (
         <div className="bg-paper">
           <ProductSection
@@ -402,23 +293,13 @@ const HomePage = () => {
         </div>
       )}
 
-      {/* ═══════════════════════════════════════════════════════
-          SALE
-      ═══════════════════════════════════════════════════════ */}
-
+      {/* SALE */}
       {saleItems.length > 0 && (
         <>
           <section className="border-y-2 border-stone bg-paper py-10 text-center">
-            <p className="eyebrow mb-3 text-ink">
-              Limited time
-            </p>
-
-            <h2 className="font-display text-5xl text-stone">
-              Sale
-            </h2>
-
+            <p className="eyebrow mb-3 text-ink">Limited time</p>
+            <h2 className="font-display text-5xl text-stone">Sale</h2>
             <div className="stitch-rule mx-auto mt-4 w-20 text-stone/40" />
-
             <p className="mt-4 text-sm text-charcoal/60">
               Selected treats up to 20% off. While stocks last.
             </p>
@@ -433,10 +314,6 @@ const HomePage = () => {
           />
         </>
       )}
-
-      {/* ═══════════════════════════════════════════════════════
-          QUICK VIEW
-      ═══════════════════════════════════════════════════════ */}
 
       <QuickViewModal
         product={quickViewProduct}

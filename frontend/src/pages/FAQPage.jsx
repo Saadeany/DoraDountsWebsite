@@ -8,7 +8,7 @@ const FAQS = [
   { q: "Can I change or cancel my order?", a: "Orders can be cancelled before they enter 'Processing' status. Contact us as soon as possible by phone or email and we'll do our best to help." },
   { q: "What payment methods do you accept?", a: "We accept Cash on Delivery, Vodafone Cash, and InstaPay." },
   { q: "Can I return or exchange my order?", a: "Because our donuts are freshly prepared food products, returns are generally not accepted. If there's an issue with your order, please contact us as soon as possible and we'll be happy to help." },
-  { q: "Can I order for a special occasion?", a: "Absolutely! Dora Dounts is perfect for birthdays, celebrations, gatherings, and sweet surprises. Contact us to discuss larger or special orders." },
+  { q: "Can I order for a special occasion?", a: "Absolutely! Dora Donuts is perfect for birthdays, celebrations, gatherings, and sweet surprises. Contact us to discuss larger or special orders." },
   { q: "Can I choose different donut flavors in one box?", a: "Yes, where available, you can mix and match your favorite flavors. The available options will be shown when placing your order." },
   { q: "Are your donuts made fresh?", a: "Yes. We prepare our donuts with freshness and quality in mind, so every order is made to be enjoyed at its best." },
 ];

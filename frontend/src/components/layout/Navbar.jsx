@@ -10,15 +10,15 @@ import { formatPrice, getFinalPrice, getPrimaryImage } from "../../utils/format"
 import NotificationBell from "../common/NotificationBell";
 
 const NAV_LINKS = [
-  { label: "Home",          to: "/"                    },
-  { label: "Shop",          to: "/shop"                },
-  { label: "Men",           to: "/shop?gender=men"     },
-  { label: "Women",         to: "/shop?gender=women"   },
-  { label: "New In",        to: "/shop?tag=new"        },
-  { label: "Best Sellers",  to: "/shop?tag=best_seller"},
-  { label: "Sale",          to: "/shop?tag=sale"       },
-  { label: "About",         to: "/about"               },
-  { label: "Contact",       to: "/contact"             },
+  { label: "Home",          to: "/"                       },
+  { label: "Shop",          to: "/shop"                   },
+  { label: "Donuts",        to: "/shop?category=donut"    },
+  { label: "Pastries",      to: "/shop?category=pastry"   },
+  { label: "New In",        to: "/shop?tag=new"           },
+  { label: "Best Sellers",  to: "/shop?tag=best_seller"   },
+  { label: "Sale",          to: "/shop?tag=sale"          },
+  { label: "About",         to: "/about"                  },
+  { label: "Contact",       to: "/contact"                },
 ];
 
 const RECENT_KEY = "ff_recent_searches";
@@ -171,7 +171,7 @@ const Navbar = () => {
                     value={query}
                     onChange={e => { setQuery(e.target.value); fetchSuggestions(e.target.value); }}
                     onKeyDown={e => e.key === "Enter" && submitSearch()}
-                    placeholder="Search products, categories, materials…"
+                    placeholder="Search donuts, muffins, waffles, pastries…"
                     className="w-full bg-transparent py-1 text-sm outline-none placeholder:text-charcoal/40" />
                   <button onClick={() => { setSearchOpen(false); setQuery(""); }} aria-label="Close search">
                     <X size={18} className="text-charcoal/50 hover:text-ink" />
@@ -213,12 +213,10 @@ const Navbar = () => {
         </AnimatePresence>
       </header>
 
-      {/* ── Mobile drawer — full-height, 100% opaque ────────────────── */}
-      {/* Rendered outside <header> so it escapes the sticky stacking context */}
+      {/* ── Mobile drawer ────────────────────────────────────────────── */}
       <AnimatePresence>
         {mobileOpen && (
           <>
-            {/* Scrim */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -229,7 +227,6 @@ const Navbar = () => {
               aria-hidden="true"
             />
 
-            {/* Drawer panel — solid bg-paper, no opacity hack */}
             <motion.aside
               initial={{ x: "100%" }}
               animate={{ x: 0 }}
@@ -238,7 +235,6 @@ const Navbar = () => {
               className="fixed right-0 top-0 z-[70] flex h-full w-[min(320px,90vw)] flex-col bg-paper shadow-2xl lg:hidden"
               aria-label="Mobile navigation">
 
-              {/* Drawer header */}
               <div className="flex items-center justify-between border-b border-ink/10 px-5 py-4">
                 <Link to="/" onClick={() => setMobileOpen(false)}
                   className="font-display text-lg tracking-widest2">
@@ -250,7 +246,6 @@ const Navbar = () => {
                 </button>
               </div>
 
-              {/* User greeting */}
               {isAuthenticated && (
                 <div className="border-b border-ink/10 bg-cream/50 px-5 py-3">
                   <p className="text-xs text-charcoal/60">Signed in as</p>
@@ -258,7 +253,6 @@ const Navbar = () => {
                 </div>
               )}
 
-              {/* Nav links */}
               <nav className="flex-1 overflow-y-auto py-3">
                 {NAV_LINKS.map((link) => (
                   <Link
@@ -276,7 +270,6 @@ const Navbar = () => {
                 ))}
               </nav>
 
-              {/* Bottom actions */}
               <div className="border-t border-ink/10 p-5 space-y-3">
                 {isAuthenticated ? (
                   <Link to={isAdmin ? "/admin" : "/profile"} onClick={() => setMobileOpen(false)}

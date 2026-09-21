@@ -80,7 +80,7 @@ const Footer = () => {
           {/* Newsletter + contact */}
           <div className="space-y-5">
             <h4 className="eyebrow text-charcoal/70">Stay in the loop</h4>
-            <p className="text-sm text-charcoal/80">New Dounts and exclusive offers, straight to your inbox.</p>
+            <p className="text-sm text-charcoal/80">New Donuts and exclusive offers, straight to your inbox.</p>
             <form onSubmit={handleSubscribe} className="flex flex-col gap-2">
               <input
                 type="email"

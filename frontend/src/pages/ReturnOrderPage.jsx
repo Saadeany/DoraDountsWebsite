@@ -14,7 +14,7 @@ const RETURN_REASONS = [
   { value: "item_defective",          label: "Item has a manufacturing defect",            requiresPhoto: true  },
   { value: "item_not_as_described",   label: "Item differs significantly from photos",     requiresPhoto: true  },
   { value: "quality_not_acceptable",  label: "Quality below expected standard",            requiresPhoto: true  },
-  { value: "missing_parts",           label: "Parts or accessories missing",               requiresPhoto: true  },
+  { value: "missing_items",           label: "Items missing from order",                   requiresPhoto: true  },
   { value: "other",                   label: "Other (please describe below)",              requiresPhoto: false },
 ];
 

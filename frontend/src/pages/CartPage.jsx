@@ -29,9 +29,6 @@ const CartPage = () => {
   const discount = coupon ? subtotal * (coupon.discount / 100) : 0;
   const taxableAmount = subtotal - discount;
   const tax = taxableAmount * TAX_RATE;
-  // Shipping now depends on the delivery area chosen at checkout (Admin >
-  // Zones), so the cart shows subtotal + tax and leaves shipping for the
-  // checkout page to calculate once an area is picked.
   const estimatedTotal = taxableAmount + tax;
 
   const applyCoupon = async () => {
@@ -66,7 +63,7 @@ const CartPage = () => {
           <ShoppingBag size={48} className="mx-auto text-charcoal/20" strokeWidth={1.5} />
           <div>
             <p className="font-display text-2xl text-charcoal/40">Your cart is empty.</p>
-            <p className="text-sm text-charcoal/50 mt-1">Add some items to get started.</p>
+            <p className="text-sm text-charcoal/50 mt-1">Add some treats to get started.</p>
           </div>
           <Link to="/shop" className="btn-primary inline-flex">Browse Products</Link>
         </div>
@@ -99,10 +96,6 @@ const CartPage = () => {
                         className="text-charcoal/35 hover:text-red-500 transition-colors shrink-0">
                         <Trash2 size={15} />
                       </button>
-                    </div>
-                    <div className="flex gap-3 text-xs text-charcoal/55">
-                      {item.size  && <span>Size: {item.size}</span>}
-                      {item.color && <span>Color: {item.color}</span>}
                     </div>
                     <div className="flex items-center justify-between mt-auto">
                       {/* Qty stepper */}

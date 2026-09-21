@@ -11,16 +11,12 @@ const QuickViewModal = ({ product, onClose }) => {
   const { isAuthenticated } = useAuth();
   const { addItem } = useCart();
   const navigate = useNavigate();
-  const [size, setSize] = useState(product?.sizes?.[0]?.name || "");
-  const [color, setColor] = useState(product?.colors?.[0]?.name || "");
   const [qty, setQty] = useState(1);
   const [busy, setBusy] = useState(false);
   const [added, setAdded] = useState(false);
 
   useEffect(() => {
     if (product) {
-      setSize(product.sizes?.[0]?.name || "");
-      setColor(product.colors?.[0]?.name || "");
       setQty(1);
       setAdded(false);
     }
@@ -35,7 +31,7 @@ const QuickViewModal = ({ product, onClose }) => {
     }
     setBusy(true);
     try {
-      await addItem(product.id, size, color, qty);
+      await addItem(product.id, qty);
       setAdded(true);
     } finally {
       setBusy(false);
@@ -76,44 +72,6 @@ const QuickViewModal = ({ product, onClose }) => {
               )}
             </div>
             <p className="mt-3 text-sm text-charcoal/70 line-clamp-3">{product.description}</p>
-
-            {product.sizes && product.sizes.length > 0 && (
-              <div className="mt-5">
-                <p className="eyebrow mb-2">Size</p>
-                <div className="flex flex-wrap gap-2">
-                  {product.sizes.map((s) => (
-                    <button
-                      key={s.id}
-                      onClick={() => setSize(s.name)}
-                      className={`border px-3 py-1.5 text-xs uppercase transition-colors ${
-                        size === s.name ? "border-ink bg-ink text-paper" : "border-ink/25 hover:border-ink"
-                      }`}
-                    >
-                      {s.name}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {product.colors && product.colors.length > 0 && (
-              <div className="mt-4">
-                <p className="eyebrow mb-2">Color</p>
-                <div className="flex flex-wrap gap-2">
-                  {product.colors.map((c) => (
-                    <button
-                      key={c.id}
-                      onClick={() => setColor(c.name)}
-                      title={c.name}
-                      className={`h-8 w-8 rounded-full border-2 transition-transform ${
-                        color === c.name ? "border-ink scale-110" : "border-transparent"
-                      }`}
-                      style={{ backgroundColor: c.hex_code || "#ccc" }}
-                    />
-                  ))}
-                </div>
-              </div>
-            )}
 
             <div className="mt-5 flex items-center gap-3">
               <p className="eyebrow">Qty</p>

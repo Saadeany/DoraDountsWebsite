@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { useSearchParams } from "react-router-dom";
 import { SlidersHorizontal, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { getProducts, getCategories, getFilterOptions } from "../api/products";
+import { getProducts, getCategories } from "../api/products";
 import ProductCard from "../components/product/ProductCard";
 import QuickViewModal from "../components/product/QuickViewModal";
 import ProductFilters from "../components/product/ProductFilters";
@@ -18,8 +18,6 @@ const ShopPage = () => {
   const [products, setProducts] = useState([]);
   const [pagination, setPagination] = useState({});
   const [categories, setCategories] = useState([]);
-  const [sizes, setSizes] = useState([]);
-  const [colors, setColors] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filterOpen, setFilterOpen] = useState(false);
   const [quickViewProduct, setQuickViewProduct] = useState(null);
@@ -27,12 +25,9 @@ const ShopPage = () => {
   const buildFilters = () => ({
     search: searchParams.get("search") || "",
     category: searchParams.get("category") || "",
-    gender: searchParams.get("gender") || "",
     tag: searchParams.get("tag") || "",
     min_price: searchParams.get("min_price") || "",
     max_price: searchParams.get("max_price") || "",
-    size: searchParams.get("size") || "",
-    color: searchParams.get("color") || "",
     sort: searchParams.get("sort") || "newest",
   });
 
@@ -49,12 +44,10 @@ const ShopPage = () => {
     setSearchParams(params, { replace: true });
   }, [filters, page]);
 
-  // Load static filter options once
+  // Load categories once
   useEffect(() => {
-    Promise.all([getCategories(), getFilterOptions()]).then(([cats, opts]) => {
+    getCategories().then((cats) => {
       setCategories(cats.data.categories);
-      setSizes(opts.data.sizes);
-      setColors(opts.data.colors);
     }).catch(() => {});
   }, []);
 
@@ -120,8 +113,6 @@ const ShopPage = () => {
             filters={filters}
             setFilters={handleFilterChange}
             categories={categories}
-            sizes={sizes}
-            colors={colors}
           />
         </div>
 
@@ -189,8 +180,6 @@ const ShopPage = () => {
                 filters={filters}
                 setFilters={(f) => { handleFilterChange(f); setFilterOpen(false); }}
                 categories={categories}
-                sizes={sizes}
-                colors={colors}
               />
             </motion.div>
           </motion.div>

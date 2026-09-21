@@ -16,7 +16,7 @@ const TermsPage = () => (
       <div className="stitch-rule mt-4 w-20 text-ink/30" />
     </div>
           <Section title="Acceptance of Terms">
-            <p>By accessing or purchasing from the Dora Dounts website, you agree to be bound by these terms. If you do not agree, please do not use the site.</p>
+            <p>By accessing or purchasing from the Dora Donuts website, you agree to be bound by these terms. If you do not agree, please do not use the site.</p>
           </Section>
 
           <Section title="Orders and Payment">
@@ -36,11 +36,11 @@ const TermsPage = () => (
           </Section>
 
           <Section title="Intellectual Property">
-            <p>All content on this website — including photography, copy, logo, branding, and design — is the property of Dora Dounts and may not be reproduced, copied, or used without written permission.</p>
+            <p>All content on this website — including photography, copy, logo, branding, and design — is the property of Dora Donuts and may not be reproduced, copied, or used without written permission.</p>
           </Section>
 
           <Section title="Limitation of Liability">
-            <p>Dora Dounts is not liable for indirect, incidental, or consequential damages arising from your use of our products or website beyond the amount you paid for the relevant order, to the extent permitted by applicable law.</p>
+            <p>Dora Donuts is not liable for indirect, incidental, or consequential damages arising from your use of our products or website beyond the amount you paid for the relevant order, to the extent permitted by applicable law.</p>
           </Section>
   </div>
 );

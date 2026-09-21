@@ -25,8 +25,6 @@ const ProductDetailPage = () => {
   const [loading, setLoading] = useState(true);
   const [selectedImage, setSelectedImage] = useState(0);
   const [zoomed, setZoomed] = useState(false);
-  const [selectedSize, setSelectedSize] = useState("");
-  const [selectedColor, setSelectedColor] = useState("");
   const [qty, setQty] = useState(1);
   const [adding, setAdding] = useState(false);
   const [reviewRating, setReviewRating] = useState(5);
@@ -42,8 +40,6 @@ const ProductDetailPage = () => {
       .then(({ data: d }) => {
         setData(d);
         setLocalReviews(d.reviews || []);
-        setSelectedSize(d.product?.sizes?.[0]?.name || "");
-        setSelectedColor(d.product?.colors?.[0]?.name || "");
         setSelectedImage(0);
       })
       .catch(() => setData(null))
@@ -92,21 +88,12 @@ if (!product)
   const images = product.images || [];
   const inWishlist = isInWishlist(product.id);
 
-  // Build size → per-size stock map from Sequelize's through-table data
-  const sizeStockMap = {};
-  (product.sizes || []).forEach((s) => {
-    const throughStock = s.ProductSize?.stock ?? s.product_size?.stock;
-    if (throughStock !== null && throughStock !== undefined) sizeStockMap[s.name] = throughStock;
-  });
-  const isSizeOOS = (name) => (sizeStockMap[name] !== undefined ? sizeStockMap[name] <= 0 : product.stock <= 0);
-
   const handleAdd = async () => {
     if (!isAuthenticated) { toast.warning("Please sign in to add items to your cart."); return; }
-    if (!selectedSize && product.sizes?.length > 0) { toast.warning("Please select a size."); return; }
     if (product.stock <= 0) { toast.error("This product is out of stock."); return; }
     setAdding(true);
     try {
-      await addItem(product.id, selectedSize, selectedColor, qty);
+      await addItem(product.id, qty);
       toast.success(`${product.name} added to cart!`);
     } catch (e) {
       toast.error(e.response?.data?.message || "Could not add to cart.");
@@ -200,59 +187,12 @@ if (!product)
           </div>
           <div className="stitch-rule text-ink/20" />
           <p className="text-sm leading-relaxed text-charcoal/75">{product.description}</p>
-          <div className="grid grid-cols-2 gap-3 text-sm">
-            {product.material && <div><span className="eyebrow block mb-1">Material</span>{product.material}</div>}
-            <div><span className="eyebrow block mb-1">Availability</span>
-              {product.stock > 0
-                ? <span className={product.stock <= 5 ? "text-amber-600 font-medium" : "text-green-700"}>{product.stock <= 5 ? `Only ${product.stock} left!` : "In Stock"}</span>
-                : <span className="text-red-500 font-medium">Sold Out</span>}
-            </div>
+          <div>
+            <span className="eyebrow block mb-1">Availability</span>
+            {product.stock > 0
+              ? <span className={product.stock <= 5 ? "text-amber-600 font-medium" : "text-green-700"}>{product.stock <= 5 ? `Only ${product.stock} left!` : "In Stock"}</span>
+              : <span className="text-red-500 font-medium">Sold Out</span>}
           </div>
-
-          {/* Sizes with OOS visual */}
-          {product.sizes?.length > 0 && (
-            <div>
-              <p className="eyebrow mb-2">Size</p>
-              <div className="flex flex-wrap gap-2">
-                {product.sizes.map((s) => {
-                  const oos = isSizeOOS(s.name);
-                  return (
-                    <button key={s.id} onClick={() => !oos && setSelectedSize(s.name)} disabled={oos}
-                      title={oos ? "Out of stock in this size" : s.name}
-                      className={`relative border px-4 py-2 text-sm uppercase transition-colors overflow-hidden
-                        ${oos ? "border-ink/10 text-charcoal/25 cursor-not-allowed" : selectedSize === s.name ? "border-ink bg-ink text-paper" : "border-ink/25 hover:border-ink"}`}>
-                      {s.name}
-                      {oos && <span className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                        <span className="block h-px w-[140%] bg-charcoal/20 rotate-[-25deg] origin-center" />
-                      </span>}
-                    </button>
-                  );
-                })}
-              </div>
-              <div className="flex items-center justify-between mt-2">
-                <p className="text-xs text-charcoal/50">Crossed-out sizes are currently out of stock.</p>
-                <a href="/size-guide" target="_blank" rel="noopener noreferrer"
-                  className="text-xs text-charcoal/60 underline hover:text-ink transition-colors flex items-center gap-1">
-                  <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" strokeWidth="2"><path d="M7 4h10M7 8h6M7 12h8"/></svg>
-                  Size Guide
-                </a>
-              </div>
-            </div>
-          )}
-
-          {/* Colors */}
-          {product.colors?.length > 0 && (
-            <div>
-              <p className="eyebrow mb-2">Color — <span className="normal-case tracking-normal text-charcoal/70">{selectedColor}</span></p>
-              <div className="flex flex-wrap gap-2">
-                {product.colors.map((c) => (
-                  <button key={c.id} onClick={() => setSelectedColor(c.name)} title={c.name}
-                    className={`h-9 w-9 rounded-full border-2 transition-transform ${selectedColor === c.name ? "border-ink scale-110" : "border-ink/10"}`}
-                    style={{ backgroundColor: c.hex_code || "#ccc" }} />
-                ))}
-              </div>
-            </div>
-          )}
 
           {/* Qty + CTA */}
           <div className="flex flex-col gap-3">
@@ -307,7 +247,7 @@ if (!product)
               <div>
                 <label className="eyebrow mb-1 block">Your Review (optional)</label>
                 <textarea rows={4} value={reviewComment} onChange={(e) => setReviewComment(e.target.value)}
-                  placeholder="Tell other customers about the fit, quality, and fabric…" className="input-field resize-none" />
+                  placeholder="Tell other customers about the flavor and freshness…" className="input-field resize-none" />
               </div>
               <button type="submit" disabled={reviewSubmitting} className="btn-primary">{reviewSubmitting ? "Submitting…" : "Submit Review"}</button>
             </form>

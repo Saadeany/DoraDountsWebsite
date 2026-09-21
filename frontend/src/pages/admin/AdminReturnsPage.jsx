@@ -21,7 +21,7 @@ const REASON_LABELS = {
   item_defective:"Item defective", wrong_item_received:"Wrong item received",
   wrong_size:"Wrong size", wrong_color:"Wrong color",
   item_not_as_described:"Not as described", quality_not_acceptable:"Quality unacceptable",
-  missing_parts:"Missing parts", other:"Other",
+  missing_items:"Missing items", other:"Other",
 };
 const WORKFLOW = {
   pending:   ["reviewing","approved","rejected"],

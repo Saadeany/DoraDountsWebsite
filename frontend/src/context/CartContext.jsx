@@ -49,8 +49,6 @@ export const CartProvider = ({ children }) => {
           guest.map(item =>
             apiAddToCart({
               product_id: item.product_id,
-              size:       item.size  || null,
-              color:      item.color || null,
               quantity:   item.quantity,
             })
           )
@@ -90,22 +88,18 @@ export const CartProvider = ({ children }) => {
   useEffect(() => { refreshCart(); }, [refreshCart]);
 
   // ── Add item ───────────────────────────────────────────────────────────
-  const addItem = useCallback(async (product_id, size, color, quantity = 1) => {
+  const addItem = useCallback(async (product_id, quantity = 1) => {
     if (!isAuthenticated) {
       // Guest: upsert into localStorage
       const g = loadGuestCart();
-      const idx = g.findIndex(
-        i => i.product_id === product_id &&
-             (i.size  || null) === (size  || null) &&
-             (i.color || null) === (color || null)
-      );
+      const idx = g.findIndex(i => i.product_id === product_id);
       if (idx >= 0) { g[idx].quantity += quantity; }
-      else { g.push({ product_id, size: size || null, color: color || null, quantity }); }
+      else { g.push({ product_id, quantity }); }
       saveGuestCart(g);
       refreshGuestCart();
       return;
     }
-    await apiAddToCart({ product_id, size, color, quantity });
+    await apiAddToCart({ product_id, quantity });
     await refreshServerCart();
   }, [isAuthenticated, refreshGuestCart, refreshServerCart]);
 

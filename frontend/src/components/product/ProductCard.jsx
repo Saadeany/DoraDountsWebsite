@@ -37,9 +37,7 @@ const ProductCard = ({ product, onQuickView }) => {
     if (product.stock === 0) { toast.error("This product is out of stock."); return; }
     setBusy(true);
     try {
-      const defaultSize = product.sizes?.[0]?.name;
-      const defaultColor = product.colors?.[0]?.name;
-      await addItem(product.id, defaultSize, defaultColor, 1);
+      await addItem(product.id, 1);
       setJustAdded(true);
       toast.success(`${product.name} added to cart!`);
       setTimeout(() => setJustAdded(false), 2500);
@@ -94,15 +92,6 @@ const ProductCard = ({ product, onQuickView }) => {
             {hasDiscount && <span className="text-xs text-charcoal/50 line-through">{formatPrice(product.price)}</span>}
             {product.is_rush_hour && <span className="text-[10px] text-amber-700">-{Math.round(product.discount)}%</span>}
           </div>
-          {product.colors?.length > 0 && (
-            <div className="flex items-center gap-1 pt-1">
-              {product.colors.slice(0, 5).map((c) => (
-                <span key={c.id} title={c.name} className="h-3 w-3 rounded-full border border-ink/15"
-                  style={{ backgroundColor: c.hex_code || "#ccc" }} />
-              ))}
-              {product.colors.length > 5 && <span className="text-[10px] text-charcoal/50">+{product.colors.length - 5}</span>}
-            </div>
-          )}
         </div>
       </Link>
     </motion.div>
