@@ -29,7 +29,7 @@ const ReturnRequest = sequelize.define("ReturnRequest", {
       "wrong_color",
       "item_not_as_described",
       "quality_not_acceptable",
-      "missing_parts",
+      "missing_items",
       "other"
     ),
     allowNull: false,

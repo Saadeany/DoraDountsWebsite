@@ -55,7 +55,7 @@ const getSavedForLater = async (req, res, next) => {
 // @route POST /api/cart
 const addToCart = async (req, res, next) => {
   try {
-    const { product_id, size, color, quantity = 1 } = req.body;
+    const { product_id, quantity = 1 } = req.body;
     if (!product_id) return res.status(400).json({ message: "Product ID is required." });
 
     const product = await Product.findByPk(product_id);
@@ -66,7 +66,7 @@ const addToCart = async (req, res, next) => {
     }
 
     let cartItem = await Cart.findOne({
-      where: { user_id: req.user.id, product_id, size: size || null, color: color || null, saved_for_later: false },
+      where: { user_id: req.user.id, product_id, saved_for_later: false },
     });
 
     if (cartItem) {
@@ -76,8 +76,6 @@ const addToCart = async (req, res, next) => {
       cartItem = await Cart.create({
         user_id: req.user.id,
         product_id,
-        size: size || null,
-        color: color || null,
         quantity,
       });
     }

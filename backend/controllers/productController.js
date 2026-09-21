@@ -1,4 +1,4 @@
-const { Op, fn, col, literal } = require("sequelize");
+const { Op, fn, col } = require("sequelize");
 const slugify = require("slugify");
 const fs = require("fs");
 const path = require("path");
@@ -6,18 +6,13 @@ const {
   Product,
   ProductImage,
   Category,
-  Size,
-  Color,
   Review,
-  sequelize,
 } = require("../models");
 const { getLiveRushHourDiscountMap, applyRushHourOverride } = require("../utils/rushHour");
 
 const PRODUCT_INCLUDES = [
   { model: Category, attributes: ["id", "name", "slug"] },
   { model: ProductImage, as: "images", attributes: ["id", "image_url", "is_primary", "sort_order"] },
-  { model: Size, as: "sizes", attributes: ["id", "name"], through: { attributes: ["stock"] } },
-  { model: Color, as: "colors", attributes: ["id", "name", "hex_code"], through: { attributes: [] } },
 ];
 
 // Computes average rating + review count for one or more product ids, and
@@ -61,8 +56,7 @@ const attachRatings = async (products, rushHourMap = {}) => {
 };
 
 // @route GET /api/products
-// Supports search, filters (category, price range, size, color, gender, tag),
-// sorting, and pagination — used by both the Shop page and the live search bar.
+// Supports search, filters (category, price range, tag), sorting, pagination.
 const getProducts = async (req, res, next) => {
   try {
     const {
@@ -70,9 +64,6 @@ const getProducts = async (req, res, next) => {
       category,
       min_price,
       max_price,
-      size,
-      color,
-      gender,
       tag,
       sort = "newest",
       page = 1,
@@ -86,7 +77,6 @@ const getProducts = async (req, res, next) => {
       where[Op.or] = [
         { name: { [Op.like]: `%${search}%` } },
         { description: { [Op.like]: `%${search}%` } },
-        { material: { [Op.like]: `%${search}%` } },
       ];
     }
 
@@ -100,18 +90,8 @@ const getProducts = async (req, res, next) => {
       if (max_price) where.price[Op.lte] = parseFloat(max_price);
     }
 
-    if (gender) where.gender = gender;
-
     if (tag) {
       where.tags = { [Op.like]: `%"${tag}"%` };
-    }
-
-    if (size) {
-      include[2] = { ...include[2], where: { name: size }, required: true };
-    }
-
-    if (color) {
-      include[3] = { ...include[3], where: { name: color }, required: true };
     }
 
     let order = [["createdAt", "DESC"]];
@@ -156,7 +136,6 @@ const getProducts = async (req, res, next) => {
 };
 
 // @route GET /api/products/search-suggestions?q=...
-// Lightweight endpoint for the navbar's instant-suggestions dropdown.
 const getSearchSuggestions = async (req, res, next) => {
   try {
     const { q } = req.query;
@@ -226,20 +205,7 @@ const generateUniqueSlug = async (name, excludeId = null) => {
 // @route POST /api/admin/products  (admin only)
 const createProduct = async (req, res, next) => {
   try {
-    const {
-      name,
-      description,
-      price,
-      discount,
-      stock,
-      category_id,
-      material,
-      brand,
-      gender,
-      tags,
-      sizes, // [{ size_id, stock }]
-      colors, // [color_id]
-    } = req.body;
+    const { name, description, price, discount, stock, category_id, tags } = req.body;
 
     if (!name || !price) {
       return res.status(400).json({ message: "Product name and price are required." });
@@ -255,9 +221,6 @@ const createProduct = async (req, res, next) => {
       discount: discount || 0,
       stock: stock || 0,
       category_id: category_id || null,
-      material,
-      brand,
-      gender: gender || "unisex",
       tags: typeof tags === "string" ? JSON.parse(tags) : tags || [],
     });
 
@@ -269,26 +232,6 @@ const createProduct = async (req, res, next) => {
         sort_order: idx,
       }));
       await ProductImage.bulkCreate(images);
-    }
-
-    const parsedSizes = typeof sizes === "string" ? JSON.parse(sizes) : sizes;
-    if (Array.isArray(parsedSizes) && parsedSizes.length > 0) {
-      await product.addSizes(
-        parsedSizes.map((s) => s.size_id),
-        { through: { stock: 0 } }
-      );
-      // Set per-size stock individually since bulk-add through options apply uniformly
-      for (const s of parsedSizes) {
-        await sequelize.models.ProductSize.update(
-          { stock: s.stock || 0 },
-          { where: { product_id: product.id, size_id: s.size_id } }
-        );
-      }
-    }
-
-    const parsedColors = typeof colors === "string" ? JSON.parse(colors) : colors;
-    if (Array.isArray(parsedColors) && parsedColors.length > 0) {
-      await product.addColors(parsedColors);
     }
 
     const full = await Product.findByPk(product.id, { include: PRODUCT_INCLUDES });
@@ -304,21 +247,7 @@ const updateProduct = async (req, res, next) => {
     const product = await Product.findByPk(req.params.id);
     if (!product) return res.status(404).json({ message: "Product not found." });
 
-    const {
-      name,
-      description,
-      price,
-      discount,
-      stock,
-      category_id,
-      material,
-      brand,
-      gender,
-      tags,
-      is_active,
-      sizes,
-      colors,
-    } = req.body;
+    const { name, description, price, discount, stock, category_id, tags, is_active } = req.body;
 
     if (name && name !== product.name) {
       product.slug = await generateUniqueSlug(name, product.id);
@@ -329,9 +258,6 @@ const updateProduct = async (req, res, next) => {
     if (discount !== undefined) product.discount = discount;
     if (stock !== undefined) product.stock = stock;
     if (category_id !== undefined) product.category_id = category_id || null;
-    if (material !== undefined) product.material = material;
-    if (brand !== undefined) product.brand = brand;
-    if (gender !== undefined) product.gender = gender;
     if (tags !== undefined) product.tags = typeof tags === "string" ? JSON.parse(tags) : tags;
     if (is_active !== undefined) product.is_active = is_active;
 
@@ -348,19 +274,6 @@ const updateProduct = async (req, res, next) => {
       await ProductImage.bulkCreate(images);
     }
 
-    const parsedSizes = typeof sizes === "string" ? JSON.parse(sizes) : sizes;
-    if (Array.isArray(parsedSizes)) {
-      await product.setSizes([]);
-      for (const s of parsedSizes) {
-        await product.addSize(s.size_id, { through: { stock: s.stock || 0 } });
-      }
-    }
-
-    const parsedColors = typeof colors === "string" ? JSON.parse(colors) : colors;
-    if (Array.isArray(parsedColors)) {
-      await product.setColors(parsedColors);
-    }
-
     const full = await Product.findByPk(product.id, { include: PRODUCT_INCLUDES });
     res.json({ message: "Product updated successfully.", product: full });
   } catch (error) {
@@ -374,7 +287,6 @@ const deleteProduct = async (req, res, next) => {
     const product = await Product.findByPk(req.params.id, { include: PRODUCT_INCLUDES });
     if (!product) return res.status(404).json({ message: "Product not found." });
 
-    // Remove image files from disk
     for (const img of product.images || []) {
       const filePath = path.join(__dirname, "..", img.image_url);
       fs.unlink(filePath, () => {});
@@ -405,8 +317,6 @@ const deleteProductImage = async (req, res, next) => {
 };
 
 // @route GET /api/admin/products  (admin only — includes inactive products, no pagination cap)
-// Note: intentionally does NOT apply the Rush Hour override — admins need
-// to see and edit the product's real, stored discount here.
 const getAllProductsAdmin = async (req, res, next) => {
   try {
     const { search, page = 1, limit = 20 } = req.query;

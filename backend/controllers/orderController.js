@@ -1,4 +1,4 @@
-const { sequelize, Order, OrderItem, Cart, Product, Coupon, User, ProductSize, Size, Zone } = require("../models");
+const { sequelize, Order, OrderItem, Cart, Product, Coupon, User, Zone } = require("../models");
 const generateOrderNumber = require("../utils/generateOrderNumber");
 const { sendOrderConfirmationEmail, sendOrderStatusEmail, sendAdminNewOrderEmail, sendAdminLowStockEmail } = require("../utils/emailService");
 const { notifyOrderConfirmed, notifyOrderStatus, notifyAdminNewOrder, notifyAdminLowStock } = require("../utils/notificationService");
@@ -73,8 +73,6 @@ const checkout = async (req, res, next) => {
       return res.status(400).json({ message: "Invalid payment method." });
     }
 
-    // Delivery zone — server-side is the source of truth for both
-    // deliverability and price, never trust the client's number.
     const zone = await Zone.findByPk(zone_id, { transaction: t });
     if (!zone) {
       await t.rollback();
@@ -85,7 +83,6 @@ const checkout = async (req, res, next) => {
       return res.status(400).json({ message: `We're sorry, we don't currently deliver to "${zone.name}".` });
     }
 
-    // Email verification gate
     if (!req.user.is_email_verified) {
       await t.rollback();
       return res.status(403).json({ message: "Please verify your email address before placing an order.", code: "EMAIL_NOT_VERIFIED" });
@@ -98,10 +95,6 @@ const checkout = async (req, res, next) => {
     });
     if (cartItems.length === 0) { await t.rollback(); return res.status(400).json({ message: "Your cart is empty." }); }
 
-    // Live Rush Hour discount, if any — computed once and reused for both
-    // the subtotal calculation below and the per-item price stored on the
-    // order, so a customer is never charged two different prices for the
-    // same window.
     const rushHourMap = await getLiveRushHourDiscountMap();
     const effectiveDiscounts = {};
     cartItems.forEach((item) => {
@@ -111,7 +104,6 @@ const checkout = async (req, res, next) => {
       }
     });
 
-    // Validate stock and subtotal
     let subtotal = 0;
     for (const item of cartItems) {
       if (!item.Product || !item.Product.is_active) {
@@ -121,17 +113,6 @@ const checkout = async (req, res, next) => {
       if (item.Product.stock < item.quantity) {
         await t.rollback();
         return res.status(400).json({ message: `Only ${item.Product.stock} unit(s) of "${item.Product.name}" left in stock.` });
-      }
-      if (item.size) {
-        const sizeRow = await ProductSize.findOne({
-          include: [{ model: Size, where: { name: item.size } }],
-          where: { product_id: item.Product.id },
-          transaction: t,
-        });
-        if (sizeRow && sizeRow.stock < item.quantity) {
-          await t.rollback();
-          return res.status(400).json({ message: `Size ${item.size} of "${item.Product.name}" only has ${sizeRow.stock} unit(s) left.` });
-        }
       }
       subtotal += item.Product.price * (1 - effectiveDiscounts[item.Product.id] / 100) * item.quantity;
     }
@@ -161,8 +142,6 @@ const checkout = async (req, res, next) => {
     const shippingCost = taxable >= FREE_SHIPPING_THRESHOLD ? 0 : parseFloat(zone.shipping_price);
     const total = taxable + tax + shippingCost;
 
-    // Transfer-based payments sit in "awaiting_transfer" until an admin
-    // confirms the money arrived (customer sends a WhatsApp screenshot).
     const paymentStatus = TRANSFER_METHODS.includes(payment_method) ? "awaiting_transfer" : "pending";
 
     const order = await Order.create({
@@ -188,22 +167,12 @@ const checkout = async (req, res, next) => {
       const fp = item.Product.price * (1 - effectiveDiscounts[item.Product.id] / 100);
       const oi = await OrderItem.create({
         order_id: order.id, product_id: item.Product.id, product_name: item.Product.name,
-        size: item.size, color: item.color, quantity: item.quantity, price: fp.toFixed(2),
+        quantity: item.quantity, price: fp.toFixed(2),
       }, { transaction: t });
       orderItemsData.push(oi);
 
       item.Product.stock -= item.quantity;
       await item.Product.save({ transaction: t });
-
-      if (item.size) {
-        await sequelize.query(
-          `UPDATE product_sizes ps
-           JOIN sizes s ON s.id = ps.size_id
-           SET ps.stock = GREATEST(0, ps.stock - :qty)
-           WHERE ps.product_id = :pid AND s.name = :size`,
-          { replacements: { qty: item.quantity, pid: item.Product.id, size: item.size }, transaction: t }
-        );
-      }
 
       if (item.Product.stock <= LOW_STOCK_THRESHOLD) lowStockProducts.push(item.Product);
     }
@@ -212,8 +181,6 @@ const checkout = async (req, res, next) => {
     await Cart.destroy({ where: { user_id: req.user.id, saved_for_later: false }, transaction: t });
     await t.commit();
 
-    // Save this address to the customer's profile for reuse next time —
-    // best-effort, never blocks the order response.
     await saveShippingAddressToUser(req.user, {
       label: "Recent",
       full_name: shipping_full_name,
@@ -230,7 +197,6 @@ const checkout = async (req, res, next) => {
 
     const fullOrder = await Order.findByPk(order.id, { include: [{ model: OrderItem, as: "items" }] });
 
-    // Post-commit notifications (fire and forget)
     sendOrderConfirmationEmail(req.user, fullOrder, fullOrder.items).catch(() => {});
     notifyOrderConfirmed(req.user.id, fullOrder).catch(() => {});
     getAdminUser().then((admin) => {
@@ -315,14 +281,6 @@ const updateOrderStatus = async (req, res, next) => {
     if (status === "cancelled" && order.status !== "cancelled") {
       for (const item of order.items) {
         await Product.increment("stock", { by: item.quantity, where: { id: item.product_id } });
-        if (item.size) {
-          await sequelize.query(
-            `UPDATE product_sizes ps JOIN sizes s ON s.id = ps.size_id
-             SET ps.stock = ps.stock + :qty
-             WHERE ps.product_id = :pid AND s.name = :size`,
-            { replacements: { qty: item.quantity, pid: item.product_id, size: item.size } }
-          );
-        }
       }
     }
 
@@ -340,9 +298,6 @@ const updateOrderStatus = async (req, res, next) => {
 };
 
 // @route PUT /api/admin/orders/:id/payment-status
-// Lets an admin confirm a Vodafone Cash / InstaPay transfer (moving
-// "awaiting_transfer" -> "paid") after checking the WhatsApp screenshot,
-// or mark a transfer as failed/refunded.
 const updateOrderPaymentStatus = async (req, res, next) => {
   try {
     const { payment_status } = req.body;

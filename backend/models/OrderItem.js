@@ -16,8 +16,6 @@ const OrderItem = sequelize.define(
       references: { model: "products", key: "id" },
     },
     product_name: { type: DataTypes.STRING(150), allowNull: false },
-    size: { type: DataTypes.STRING(20), allowNull: true },
-    color: { type: DataTypes.STRING(30), allowNull: true },
     quantity: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 1 },
     price: { type: DataTypes.DECIMAL(10, 2), allowNull: false },
   },

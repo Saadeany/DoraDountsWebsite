@@ -42,20 +42,6 @@ const Product = sequelize.define(
       allowNull: true,
       references: { model: "categories", key: "id" },
     },
-    material: {
-      type: DataTypes.STRING(100),
-      allowNull: true,
-    },
-    brand: {
-      type: DataTypes.STRING(100),
-      allowNull: true,
-      defaultValue: "Felt & Form",
-    },
-    gender: {
-      type: DataTypes.ENUM("men", "women", "unisex"),
-      allowNull: false,
-      defaultValue: "unisex",
-    },
     tags: {
       // JSON array, e.g. ["new", "best_seller", "trending", "sale"]
       type: DataTypes.JSON,

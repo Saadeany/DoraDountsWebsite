@@ -4,10 +4,6 @@ const User = require("./User");
 const Category = require("./Category");
 const Product = require("./Product");
 const ProductImage = require("./ProductImage");
-const Size = require("./Size");
-const Color = require("./Color");
-const ProductSize = require("./ProductSize");
-const ProductColor = require("./ProductColor");
 const Order = require("./Order");
 const OrderItem = require("./OrderItem");
 const Wishlist = require("./Wishlist");
@@ -30,18 +26,6 @@ Product.belongsTo(Category, { foreignKey: "category_id" });
 // Product <-> ProductImage
 Product.hasMany(ProductImage, { foreignKey: "product_id", as: "images", onDelete: "CASCADE" });
 ProductImage.belongsTo(Product, { foreignKey: "product_id" });
-
-// Product <-> Size (M2M)
-Product.belongsToMany(Size, { through: ProductSize, foreignKey: "product_id", otherKey: "size_id", as: "sizes" });
-Size.belongsToMany(Product, { through: ProductSize, foreignKey: "size_id", otherKey: "product_id" });
-ProductSize.belongsTo(Size, { foreignKey: "size_id" });
-ProductSize.belongsTo(Product, { foreignKey: "product_id" });
-Size.hasMany(ProductSize, { foreignKey: "size_id" });
-Product.hasMany(ProductSize, { foreignKey: "product_id" });
-
-// Product <-> Color (M2M)
-Product.belongsToMany(Color, { through: ProductColor, foreignKey: "product_id", otherKey: "color_id", as: "colors" });
-Color.belongsToMany(Product, { through: ProductColor, foreignKey: "color_id", otherKey: "product_id" });
 
 // Product <-> RushHour (M2M)
 RushHour.belongsToMany(Product, { through: RushHourProduct, as: "products", foreignKey: "rush_hour_id", otherKey: "product_id" });
@@ -101,7 +85,6 @@ EmailLog.belongsTo(User, { foreignKey: "user_id" });
 
 module.exports = {
   sequelize, User, Category, Product, ProductImage,
-  Size, Color, ProductSize, ProductColor,
   Order, OrderItem, Wishlist, Cart, Coupon, Review, Newsletter,
   EmailVerificationToken, PasswordResetToken, Notification, EmailLog,
   Zone, RushHour, RushHourProduct,

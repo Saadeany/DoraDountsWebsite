@@ -17,12 +17,9 @@ const {
 
 // ── Return eligibility policy ──────────────────────────────────────────────
 const RETURN_POLICY = {
-  // Max days after delivery to submit a return
   return_window_days: 14,
-  // Cancellation: only allowed while order is pending or processing
   cancellable_statuses: ["pending", "processing"],
-  // These reasons require photo evidence
-  photo_required_reasons: ["item_damaged", "item_defective", "wrong_item_received", "missing_parts"],
+  photo_required_reasons: ["item_damaged", "item_defective", "wrong_item_received", "missing_items"],
 };
 
 const generateRequestNumber = () => {
@@ -51,7 +48,6 @@ const submitRequest = async (req, res, next) => {
     });
     if (!order) return res.status(404).json({ message: "Order not found." });
 
-    // ── Eligibility checks ────────────────────────────────────────────────
     if (type === "cancellation") {
       if (!RETURN_POLICY.cancellable_statuses.includes(order.status)) {
         return res.status(400).json({
@@ -68,7 +64,6 @@ const submitRequest = async (req, res, next) => {
           code: "ORDER_NOT_DELIVERED",
         });
       }
-      // Check return window
       const deliveredDaysAgo = Math.floor(
         (Date.now() - new Date(order.updatedAt).getTime()) / (1000 * 60 * 60 * 24)
       );
@@ -80,7 +75,6 @@ const submitRequest = async (req, res, next) => {
       }
     }
 
-    // ── Duplicate check ───────────────────────────────────────────────────
     const existing = await ReturnRequest.findOne({
       where: {
         order_id,
@@ -96,7 +90,6 @@ const submitRequest = async (req, res, next) => {
       });
     }
 
-    // ── Photo requirement check ───────────────────────────────────────────
     const uploadedImages = req.files ? req.files.map((f) => `/uploads/returns/${f.filename}`) : [];
     if (RETURN_POLICY.photo_required_reasons.includes(reason) && uploadedImages.length === 0) {
       return res.status(400).json({
@@ -108,8 +101,6 @@ const submitRequest = async (req, res, next) => {
     const parsedItems = typeof items === "string" ? JSON.parse(items) : items || order.items.map((i) => ({
       order_item_id: i.id,
       product_name: i.product_name,
-      size: i.size,
-      color: i.color,
       quantity: i.quantity,
     }));
 
@@ -125,7 +116,6 @@ const submitRequest = async (req, res, next) => {
       status: "pending",
     });
 
-    // Fire notifications (non-blocking)
     sendReturnConfirmEmail(req.user, request, order).catch(() => {});
     notifyReturnSubmitted(req.user.id, request).catch(() => {});
     getAdminUser().then((admin) => {
@@ -205,7 +195,7 @@ const getAllRequests = async (req, res, next) => {
   }
 };
 
-// @route PUT /api/admin/returns/:id  (admin only — update status, add notes, set refund)
+// @route PUT /api/admin/returns/:id  (admin only)
 const updateRequest = async (req, res, next) => {
   try {
     const { status, admin_notes, rejection_reason, refund_amount, refund_method, refund_reference } = req.body;
@@ -242,7 +232,6 @@ const updateRequest = async (req, res, next) => {
 
     await request.save();
 
-    // Notify customer on meaningful status changes
     if (status && status !== previousStatus) {
       const customer = request.User;
       const order = request.Order;
@@ -283,7 +272,7 @@ const deleteRequestImage = async (req, res, next) => {
   }
 };
 
-// @route GET /api/returns/policy  (public — returns the policy constants for the frontend)
+// @route GET /api/returns/policy  (public)
 const getPolicy = (req, res) => {
   res.json({ policy: RETURN_POLICY });
 };
