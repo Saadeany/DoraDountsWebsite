@@ -34,22 +34,33 @@ const {
   deleteRushHour,
 } = require("../controllers/rushHourController");
 
+// New: express-validator chains. `adminValidators.router` covers every JSON
+// admin endpoint below (it's a no-op passthrough for anything it doesn't
+// recognize); the four product/category arrays are spliced individually
+// into their routes since those bodies only exist after multer parses the
+// multipart form.
+const adminValidators = require("../validators/adminValidators");
+
 // Every route below requires a valid admin JWT
 router.use(protect, adminOnly);
+
+// Validates every matching JSON admin route below before it reaches its
+// controller (400 + {message} on bad input; passes through otherwise).
+router.use(adminValidators.router);
 
 // ---- Dashboard ----
 router.get("/stats", getDashboardStats);
 
 // ---- Products ----
 router.get("/products", getAllProductsAdmin);
-router.post("/products", uploadProductImages.array("images", 8), createProduct);
-router.put("/products/:id", uploadProductImages.array("images", 8), updateProduct);
+router.post("/products", uploadProductImages.array("images", 8), ...adminValidators.productCreate, createProduct);
+router.put("/products/:id", uploadProductImages.array("images", 8), ...adminValidators.productUpdate, updateProduct);
 router.delete("/products/:id", deleteProduct);
 router.delete("/products/:id/images/:imageId", deleteProductImage);
 
 // ---- Categories ----
-router.post("/categories", uploadCategoryImage.single("image"), createCategory);
-router.put("/categories/:id", uploadCategoryImage.single("image"), updateCategory);
+router.post("/categories", uploadCategoryImage.single("image"), ...adminValidators.categoryCreate, createCategory);
+router.put("/categories/:id", uploadCategoryImage.single("image"), ...adminValidators.categoryUpdate, updateCategory);
 router.delete("/categories/:id", deleteCategory);
 
 // ---- Orders ----

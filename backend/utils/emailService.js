@@ -21,12 +21,12 @@ const FROM = `"${process.env.EMAIL_FROM_NAME || "Felt & Form"}" <${
 
 // ── Brand tokens ───────────────────────────────────────────────────────────
 const B = {
-  ink: "#1A1A1A",
-  charcoal: "#2B2B2B",
-  stone: "#A89F8E",
-  beige: "#D8C9AE",
-  cream: "#F4F1EA",
-  paper: "#FAF8F4",
+  ink: "#FF0090",       // primary text / buttons / accents — pink
+  charcoal: "#000000",  // secondary text / footer text — black
+  stone: "#45cbdd",     // darker cyan accent
+  beige: "#45cbdd",     // darker cyan accent
+  cream: "#45cbdd",     // darker cyan accent
+  paper: "#FFFFFF",     // page background — white
   white: "#FFFFFF",
   green: "#16a34a",
   red: "#dc2626",
